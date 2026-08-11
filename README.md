@@ -15,7 +15,8 @@
 - 서울시·카카오 실제 API 키를 사용한 1차 표본 접근 검증 완료
 - 한강공원 11곳의 단일 시점 필드 품질 검증 완료
 - 11개 임시 만남 지점과 3×3 대중교통 경로 표본 검증 완료
-- 시간대별 안정성·현장 식별성과 추천 규칙 검증 예정
+- 11개 후보·9개 경계 사례로 추천 규칙 프로토타입 검증 완료
+- 공평성 정책 제품 검수와 실제 약속 사례 비교 예정
 
 ## MVP
 
@@ -36,9 +37,11 @@
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Data source ledger](./docs/DATA_SOURCES.md)
 - [Meeting point catalog](./docs/MEETING_POINTS.md)
+- [Experimental recommendation rules](./docs/RECOMMENDATION_RULES.md)
 - [AI-assisted development](./docs/AI_DEVELOPMENT.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
+- [Recommendation spike](./tasks/spikes/002-recommendation.md)
 - [Codex working agreement](./AGENTS.md)
 
 ## Development approach
