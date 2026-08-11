@@ -3,6 +3,16 @@ import test from "node:test";
 
 import { FAIRNESS_POLICIES, evaluateCandidate, recommend } from "./recommendation.ts";
 import { RECOMMENDATION_CASES } from "../fixtures/recommendation-cases.ts";
+import { LIVE_FAIRNESS_CASES } from "../fixtures/live-fairness-cases.ts";
+
+test("live fairness harness defines five distinct three-person cases", () => {
+  assert.equal(LIVE_FAIRNESS_CASES.length, 5);
+  assert.equal(new Set(LIVE_FAIRNESS_CASES.map((item) => item.id)).size, 5);
+  for (const item of LIVE_FAIRNESS_CASES) {
+    assert.equal(item.origins.length, 3);
+    assert.equal(new Set(item.origins).size, 3);
+  }
+});
 
 test("each acceptance fixture evaluates all 11 Hangang parks", () => {
   for (const fixture of Object.values(RECOMMENDATION_CASES)) {
