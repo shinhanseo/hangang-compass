@@ -23,7 +23,10 @@ type CandidateOverride = Partial<Omit<CandidateInput, "conditions" | "facilities
 };
 
 function routes(minutes: Array<number | null>): RouteEstimate[] {
-  return PARTICIPANTS.map((participantId, index) => ({ participantId, minutes: minutes[index] }));
+  return PARTICIPANTS.map((participantId, index) => ({
+    participantId,
+    minutes: minutes[index] ?? null,
+  }));
 }
 
 function fixture(

@@ -343,7 +343,8 @@ export function recommend(
     };
   }
 
-  const [recommended, alternative] = eligible;
+  const recommended = eligible[0]!;
+  const alternative = eligible[1]!;
   return {
     status: "ok",
     policyId: policy.id,

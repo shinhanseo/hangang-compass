@@ -54,6 +54,19 @@ Hangang Compass는 OpenAI Codex를 활용한 하네스 기반 AI 보조 개발 �
 
 AI가 생성한 결과도 자동 테스트와 시나리오 기반 인수 기준을 통과해야 하며, 추천 결과는 생성형 AI의 판단이 아닌 재현 가능한 규칙과 실제 데이터 근거로 결정됩니다. 자세한 역할과 검증 원칙은 [AI-assisted development](./docs/AI_DEVELOPMENT.md)에 기록합니다.
 
+## Local harness
+
+Node.js 22.12 이상과 npm을 사용합니다.
+
+```bash
+npm install
+npm run check
+npm run dev:web
+npm run dev:api
+```
+
+`npm run check`는 TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다.
+
 ## Principles
 
 - 정보 조회보다 일행의 장소 결정을 돕습니다.
