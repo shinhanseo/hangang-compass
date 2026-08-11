@@ -39,6 +39,8 @@
 - [Data source ledger](./docs/DATA_SOURCES.md)
 - [Meeting point catalog](./docs/MEETING_POINTS.md)
 - [Experimental recommendation rules](./docs/RECOMMENDATION_RULES.md)
+- [Privacy and sharing-link threat model](./docs/PRIVACY_THREAT_MODEL.md)
+- [Privacy notice draft](./docs/PRIVACY_NOTICE_DRAFT.md)
 - [AI-assisted development](./docs/AI_DEVELOPMENT.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
