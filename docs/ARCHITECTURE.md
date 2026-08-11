@@ -114,7 +114,7 @@
 - **계약:** 클라이언트와 API가 공유하는 런타임 스키마 및 타입
 - **추천 도메인:** Express 라우트와 분리된 순수 TypeScript 모듈
 
-단일 저장소 안에 `web`, `api`, `domain/shared` 경계를 두는 워크스페이스 구조를 우선한다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
+단일 저장소 안에 `apps/web`, `apps/api`, `domain` 경계를 둔다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
 
 ### 경계 원칙
 
@@ -127,9 +127,10 @@
 
 ### 확정된 애플리케이션 하네스
 
-- npm workspaces로 `apps/web`과 `apps/api`를 관리한다.
+- npm workspaces로 `apps/web`, `apps/api`, `domain`을 관리한다.
 - Vite로 React 웹 개발 서버와 프로덕션 빌드를 실행한다.
 - Express API는 `tsx`로 개발 실행하고 TypeScript로 빌드한다.
+- 추천 규칙은 API가 workspace 패키지로 참조하는 순수 TypeScript `domain`에 둔다.
 - 루트 `npm run check`에서 strict 타입 검사, 테스트, 전체 빌드를 수행한다.
 - 상세 결정과 보류 항목은 [`ADR 001`](./adr/001-application-harness.md)에 기록한다.
 

@@ -6,7 +6,7 @@
 
 ## Product status
 
-현재는 구현 전에 가장 위험한 가정을 검증하는 단계입니다.
+현재는 위험한 가정을 검증하면서 첫 클릭 가능한 핵심 여정을 만든 단계입니다.
 
 - 제품 범위와 검수 기준 정의 완료
 - 모바일 우선 반응형 웹앱으로 확정
@@ -18,7 +18,9 @@
 - 11개 후보·9개 경계 사례로 추천 규칙 프로토타입 검증 완료
 - 균형 중심 공평성 방향 승인, 대표 5조합×11개 공원 실경로 검증 완료
 - 최소 위치 입력·자동 삭제·공유 링크 권한 정책 확정
-- 실제 사용자 약속 사례 비교와 애플리케이션 하네스 구성 예정
+- TypeScript/React/Express 애플리케이션 하네스와 CI 구성 완료
+- fake 데이터 기반 약속 생성 → 친구 링크 참여 → 추천·대안 표시 수직 슬라이스 완료
+- 실제 사용자 약속 사례 비교와 실데이터 통합 예정
 
 ## MVP
 
@@ -43,6 +45,7 @@
 - [Privacy and sharing-link threat model](./docs/PRIVACY_THREAT_MODEL.md)
 - [Privacy notice draft](./docs/PRIVACY_NOTICE_DRAFT.md)
 - [AI-assisted development](./docs/AI_DEVELOPMENT.md)
+- [Clickable fake journey](./docs/DEMO.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
 - [Recommendation spike](./tasks/spikes/002-recommendation.md)
@@ -65,7 +68,7 @@ npm run dev:web
 npm run dev:api
 ```
 
-`npm run check`는 TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다.
+`npm run check`는 TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 현재 클릭 가능한 fake 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
 
 ## Principles
 
