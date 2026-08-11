@@ -97,7 +97,7 @@
 
 TypeScript + React 클라이언트와 TypeScript + Node.js/Express API를 단일 저장소 하네스로 구성한다. 공유 링크 참여 폼과 결과 카드 한 조각만 구현해 경계와 자동화를 검증한다.
 
-**현재 상태(2026-08-12):** npm workspaces, Vite/React 웹, Express API, 순수 TypeScript 추천 도메인 workspace, strict 검사, Node 단위/API 테스트와 통합 빌드를 구성했다. 개인정보 헤더가 적용된 API와 모바일 우선 웹에서 공유 링크 참여 폼 및 추천 결과 카드까지 실제로 동작한다.
+**현재 상태(2026-08-12):** 최상위 frontend/backend npm workspaces, Vite/React 웹, Express API, strict 검사, Node 단위/API/아키텍처 테스트와 통합 빌드를 구성했다. 백엔드는 domain/application/infrastructure/presentation 의존성 방향을 자동 검증하고, 프론트엔드는 app/pages/features/shared로 역할을 분리했다. 개인정보 헤더가 적용된 API와 모바일 우선 웹에서 공유 링크 참여 폼 및 추천 결과 카드까지 실제로 동작한다.
 
 비교 기준:
 

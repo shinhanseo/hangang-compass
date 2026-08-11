@@ -4,20 +4,20 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*",
-    "domain"
+    "backend",
+    "frontend"
   ],
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "npm run build --workspace @hangang-compass/domain && npm run build --workspace @hangang-compass/api && npm run build --workspace @hangang-compass/web",
+    "build": "npm run build --workspace @hangang-compass/backend && npm run build --workspace @hangang-compass/frontend",
     "check": "npm run security:check && npm run typecheck && npm test && npm run build",
-    "dev:api": "npm run build --workspace @hangang-compass/domain && npm run dev --workspace @hangang-compass/api",
-    "dev:web": "npm run dev --workspace @hangang-compass/web",
+    "dev:api": "npm run dev --workspace @hangang-compass/backend",
+    "dev:web": "npm run dev --workspace @hangang-compass/frontend",
     "security:check": "node scripts/check-repository-secrets.mjs",
-    "test": "npm run build --workspace @hangang-compass/domain && tsx --test domain/*.test.ts scripts/*.test.mjs && npm run test --workspaces --if-present",
-    "typecheck": "tsc -p tsconfig.domain.json && npm run typecheck --workspaces --if-present"
+    "test": "tsx --test scripts/*.test.mjs && npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "22.20.1",

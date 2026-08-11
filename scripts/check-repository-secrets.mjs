@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
-const trackedFiles = execFileSync("git", ["ls-files", "-z"])
+const trackedFiles = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
   .toString("utf8")
   .split("\0")
-  .filter(Boolean);
+  .filter((file) => file && existsSync(file));
 const forbiddenFiles = trackedFiles.filter((file) => /^\.env(?:\.|$)/u.test(file) && file !== ".env.example");
 const patterns = [
   { name: "configured_api_key", expression: /^(?:SEOUL_DATA_API_KEY|KAKAO_REST_API_KEY)=\S+/gmu },

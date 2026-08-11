@@ -39,6 +39,7 @@
 - [Product requirements](./PRODUCT.md)
 - [Acceptance criteria](./docs/ACCEPTANCE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Clean architecture decision](./docs/adr/002-clean-architecture-boundaries.md)
 - [Data source ledger](./docs/DATA_SOURCES.md)
 - [Meeting point catalog](./docs/MEETING_POINTS.md)
 - [Experimental recommendation rules](./docs/RECOMMENDATION_RULES.md)
@@ -69,6 +70,24 @@ npm run dev:api
 ```
 
 `npm run check`는 TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 현재 클릭 가능한 fake 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
+
+## Repository structure
+
+```text
+frontend/src/
+  app/          앱 진입점과 전역 설정
+  pages/        URL 단위 화면
+  features/     추천 등 제품 기능 UI
+  shared/       API 계약과 공통 라이브러리
+
+backend/src/
+  domain/         순수 제품 규칙
+  application/    유스케이스와 port
+  infrastructure/ 저장소·암호화·외부 데이터 구현
+  presentation/   Express HTTP 경계
+```
+
+백엔드 계층의 금지 의존성은 architecture test로 검사합니다.
 
 ## Principles
 

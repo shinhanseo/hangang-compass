@@ -1,5 +1,5 @@
-import { FAIRNESS_POLICIES, recommend } from "../domain/recommendation.ts";
-import { RECOMMENDATION_CASES } from "../fixtures/recommendation-cases.ts";
+import { FAIRNESS_POLICIES, recommend } from "../backend/src/domain/recommendation/recommendation.ts";
+import { RECOMMENDATION_CASES } from "../backend/test/fixtures/recommendation-cases.ts";
 
 for (const [caseId, fixture] of Object.entries(RECOMMENDATION_CASES)) {
   const policies = Object.values(FAIRNESS_POLICIES).map((policy) => {

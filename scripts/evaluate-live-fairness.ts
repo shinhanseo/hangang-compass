@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
-import { FAIRNESS_POLICIES, recommend, type CandidateInput } from "../domain/recommendation.ts";
-import { LIVE_FAIRNESS_CASES } from "../fixtures/live-fairness-cases.ts";
+import { FAIRNESS_POLICIES, recommend, type CandidateInput } from "../backend/src/domain/recommendation/recommendation.ts";
+import { LIVE_FAIRNESS_CASES } from "../backend/test/fixtures/live-fairness-cases.ts";
 import { parseEnv } from "./validate-data-access.mjs";
 import { inspectRoute, resolveMeetingPoint, resolveOrigin } from "./validate-meeting-points.mjs";
 

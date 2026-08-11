@@ -114,7 +114,7 @@
 - **계약:** 클라이언트와 API가 공유하는 런타임 스키마 및 타입
 - **추천 도메인:** Express 라우트와 분리된 순수 TypeScript 모듈
 
-단일 저장소 안에 `apps/web`, `apps/api`, `domain` 경계를 둔다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
+단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
 
 ### 경계 원칙
 
@@ -127,12 +127,15 @@
 
 ### 확정된 애플리케이션 하네스
 
-- npm workspaces로 `apps/web`, `apps/api`, `domain`을 관리한다.
+- npm workspaces로 `frontend`와 `backend`를 관리한다.
 - Vite로 React 웹 개발 서버와 프로덕션 빌드를 실행한다.
 - Express API는 `tsx`로 개발 실행하고 TypeScript로 빌드한다.
-- 추천 규칙은 API가 workspace 패키지로 참조하는 순수 TypeScript `domain`에 둔다.
+- 추천 규칙은 Express·저장소·외부 공급자를 모르는 `backend/src/domain`의 순수 TypeScript에 둔다.
+- application use case는 repository·token·추천 데이터 port에만 의존하고 infrastructure가 이를 구현한다.
+- Express 요청·쿠키·응답 변환은 `backend/src/presentation`에 제한한다.
+- React는 `app`, `pages`, `features`, `shared` 경계로 나누고 공통 API 계약과 HTTP 처리를 화면에서 분리한다.
 - 루트 `npm run check`에서 strict 타입 검사, 테스트, 전체 빌드를 수행한다.
-- 상세 결정과 보류 항목은 [`ADR 001`](./adr/001-application-harness.md)에 기록한다.
+- 하네스 선택은 [`ADR 001`](./adr/001-application-harness.md), 계층과 의존성 방향은 [`ADR 002`](./adr/002-clean-architecture-boundaries.md)에 기록한다.
 
 ### 아직 선택하지 않는 항목
 

@@ -1,0 +1,32 @@
+import { buildRecommendationView } from "../services/build-recommendation-view.js";
+import type { CapabilityTokenService } from "../ports/capability-token-service.js";
+import type { MeetingRepository } from "../ports/meeting-repository.js";
+import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
+
+export interface JoinMeetingInput {
+  inviteToken: string;
+  alias: string;
+  stationId: string;
+}
+
+export function joinMeeting(
+  repository: MeetingRepository,
+  tokens: CapabilityTokenService,
+  recommendations: RecommendationDataSource,
+  input: JoinMeetingInput,
+) {
+  const meeting = repository.findByInviteTokenHash(tokens.hashCapability(input.inviteToken));
+  if (!meeting || !recommendations.hasStation(input.stationId) || meeting.participants.length >= 8) {
+    return null;
+  }
+  meeting.participants.push({
+    id: tokens.generateId(),
+    alias: input.alias,
+    stationId: input.stationId,
+  });
+  repository.save(meeting);
+  return {
+    participantCount: meeting.participants.length,
+    result: buildRecommendationView(meeting, recommendations),
+  };
+}

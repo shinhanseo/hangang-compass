@@ -93,7 +93,7 @@
 ## 재현
 
 ```bash
-node --test domain/recommendation.test.ts
+npm test --workspace @hangang-compass/backend
 node scripts/run-recommendation-spike.ts
 node scripts/evaluate-live-fairness.ts
 ```
