@@ -97,6 +97,7 @@ test("capability tokens use 256 random bits and URL-safe encoding", () => {
 });
 
 test("proposed MVP does not persist raw addresses or precise coordinates", () => {
+  assert.equal(PROPOSED_PRIVACY_POLICY.status, "approved");
   assert.equal(PROPOSED_PRIVACY_POLICY.persistRawAddress, false);
   assert.equal(PROPOSED_PRIVACY_POLICY.persistPreciseCoordinates, false);
   assert.equal(PROPOSED_PRIVACY_POLICY.mvpOriginInput, "provider_place_reference_only");

@@ -16,7 +16,7 @@ export type CapabilityAction =
 
 export const PROPOSED_PRIVACY_POLICY = {
   version: "privacy-spike-v1",
-  status: "awaiting_user_approval",
+  status: "approved",
   tokenRandomBytes: 32,
   draftRetentionDays: 7,
   afterMeetingRetentionHours: 24,
