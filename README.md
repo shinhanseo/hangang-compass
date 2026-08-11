@@ -14,7 +14,8 @@
 - 서울시 혼잡·날씨 데이터와 대중교통 경로 API의 공식 문서 조사 완료
 - 서울시·카카오 실제 API 키를 사용한 1차 표본 접근 검증 완료
 - 한강공원 11곳의 단일 시점 필드 품질 검증 완료
-- 시간대별 안정성과 추천 규칙 검증 예정
+- 11개 임시 만남 지점과 3×3 대중교통 경로 표본 검증 완료
+- 시간대별 안정성·현장 식별성과 추천 규칙 검증 예정
 
 ## MVP
 
@@ -34,6 +35,7 @@
 - [Acceptance criteria](./docs/ACCEPTANCE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Data source ledger](./docs/DATA_SOURCES.md)
+- [Meeting point catalog](./docs/MEETING_POINTS.md)
 - [AI-assisted development](./docs/AI_DEVELOPMENT.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
