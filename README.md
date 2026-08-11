@@ -32,9 +32,16 @@
 - [Acceptance criteria](./docs/ACCEPTANCE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Data source ledger](./docs/DATA_SOURCES.md)
+- [AI-assisted development](./docs/AI_DEVELOPMENT.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
 - [Codex working agreement](./AGENTS.md)
+
+## Development approach
+
+Hangang Compass는 OpenAI Codex를 활용한 하네스 기반 AI 보조 개발 프로젝트입니다. 저장소 소유자가 제품 방향과 중요한 결정을 검수하고, Codex가 구현·테스트·문서화·반복 수정을 담당합니다.
+
+AI가 생성한 결과도 자동 테스트와 시나리오 기반 인수 기준을 통과해야 하며, 추천 결과는 생성형 AI의 판단이 아닌 재현 가능한 규칙과 실제 데이터 근거로 결정됩니다. 자세한 역할과 검증 원칙은 [AI-assisted development](./docs/AI_DEVELOPMENT.md)에 기록합니다.
 
 ## Principles
 
