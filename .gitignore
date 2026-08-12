@@ -12,3 +12,4 @@ coverage/
 # Local tooling
 .DS_Store
 *.log
+.data/

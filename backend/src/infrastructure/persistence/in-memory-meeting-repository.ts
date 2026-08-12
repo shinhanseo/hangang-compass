@@ -7,7 +7,7 @@ export class InMemoryMeetingRepository implements MeetingRepository {
 
   save(meeting: Meeting): void {
     this.#meetings.set(meeting.id, meeting);
-    this.#inviteIndex.set(meeting.inviteTokenHash, meeting.id);
+    for (const inviteTokenHash of meeting.inviteTokenHashes) this.#inviteIndex.set(inviteTokenHash, meeting.id);
   }
 
   findById(id: string): Meeting | undefined {

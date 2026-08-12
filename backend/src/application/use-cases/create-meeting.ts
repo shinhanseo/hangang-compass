@@ -15,11 +15,12 @@ export async function createMeeting(dependencies: CreateMeetingDependencies, mee
   const hostToken = dependencies.tokens.generateCapability();
   const meeting: Meeting = {
     id: dependencies.tokens.generateId(),
+    createdAt: new Date().toISOString(),
     meetingAt,
     travelPattern,
     sharedOrigin: null,
-    inviteTokenHash: dependencies.tokens.hashCapability(inviteToken),
-    hostTokenHash: dependencies.tokens.hashCapability(hostToken),
+    inviteTokenHashes: [dependencies.tokens.hashCapability(inviteToken)],
+    hostTokenHashes: [dependencies.tokens.hashCapability(hostToken)],
     participants: [],
     confirmedParkId: null,
   };

@@ -1,6 +1,7 @@
 import type { CapabilityTokenService } from "../ports/capability-token-service.js";
 import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { OriginPlaceProvider } from "../ports/origin-place-provider.js";
+import { isAuthorizedHost } from "../services/authorize-host.js";
 
 export async function setSharedOrigin(
   repository: MeetingRepository,
@@ -14,7 +15,7 @@ export async function setSharedOrigin(
   },
 ) {
   const meeting = repository.findById(input.meetingId);
-  if (!meeting || !input.hostToken || tokens.hashCapability(input.hostToken) !== meeting.hostTokenHash) return null;
+  if (!isAuthorizedHost(meeting, tokens, input.hostToken)) return null;
   if (meeting.travelPattern !== "shared_origin" || meeting.participants.length > 0) return null;
   const place = await origins.resolve({ id: input.placeId, name: input.placeName });
   if (!place) return null;

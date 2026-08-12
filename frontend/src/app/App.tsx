@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { CreateMeetingPage } from "../pages/create-meeting/CreateMeetingPage";
 import { HostMeetingPage } from "../pages/host-meeting/HostMeetingPage";
 import { JoinMeetingPage } from "../pages/join-meeting/JoinMeetingPage";
+import { RecoverHostPage } from "../pages/recover-host/RecoverHostPage";
 
 export function App() {
   const [path, setPath] = useState(window.location.pathname);
@@ -13,6 +14,8 @@ export function App() {
   }, []);
   const host = path.match(/^\/host\/([^/]+)$/u);
   const join = path.match(/^\/join\/([^/]+)$/u);
+  const recover = path.match(/^\/recover\/([^/]+)$/u);
+  if (recover) return <RecoverHostPage meetingId={recover[1]!} />;
   if (host) return <HostMeetingPage meetingId={host[1]!} />;
   if (join) return <JoinMeetingPage inviteToken={join[1]!} />;
   return <CreateMeetingPage />;

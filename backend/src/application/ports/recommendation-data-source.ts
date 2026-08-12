@@ -25,4 +25,12 @@ export interface RecommendationDataSource {
     source: "fake" | "seoul_realtime_citydata";
     reason?: CrowdUnavailableReason | "outside_forecast_window" | "forecast_unavailable" | "invalid_target_time";
   };
+  currentCrowdFor(parkId: string): {
+    level: CrowdLevel | null;
+    label: string;
+    observedAt: string | null;
+    fetchedAt: string | null;
+    freshness: "fresh" | "stale" | null;
+    source: "fake" | "seoul_realtime_citydata";
+  };
 }

@@ -97,4 +97,26 @@ export class LiveCrowdRecommendationDataSource implements RecommendationDataSour
       source: selected.source,
     };
   }
+
+  currentCrowdFor(parkId: string) {
+    const result = this.#results.get(parkId);
+    if (!result || result.status === "unavailable") {
+      return {
+        level: null,
+        label: "확인 불가",
+        observedAt: null,
+        fetchedAt: result?.fetchedAt ?? null,
+        freshness: null,
+        source: "seoul_realtime_citydata" as const,
+      };
+    }
+    return {
+      level: result.snapshot.current.level,
+      label: CROWD_LABEL[result.snapshot.current.level],
+      observedAt: result.snapshot.current.observedAt,
+      fetchedAt: result.snapshot.fetchedAt,
+      freshness: result.snapshot.current.freshness,
+      source: result.snapshot.source,
+    };
+  }
 }

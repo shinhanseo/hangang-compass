@@ -33,6 +33,7 @@ export class LiveRouteRecommendationDataSource implements RecommendationDataSour
   meetingPointFor(parkId: string) { return this.#base.meetingPointFor(parkId); }
   experienceFor(parkId: string) { return this.#base.experienceFor(parkId); }
   arrivalCrowdFor(parkId: string, meetingAt: string) { return this.#base.arrivalCrowdFor(parkId, meetingAt); }
+  currentCrowdFor(parkId: string) { return this.#base.currentCrowdFor(parkId); }
 
   async prepareFor(participants: Participant[], meetingAt: string): Promise<void> {
     await this.#base.prepareFor(participants, meetingAt);

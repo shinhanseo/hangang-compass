@@ -2,6 +2,7 @@ import { buildRecommendationView } from "../services/build-recommendation-view.j
 import type { CapabilityTokenService } from "../ports/capability-token-service.js";
 import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
+import { isAuthorizedHost } from "../services/authorize-host.js";
 
 export async function confirmMeetingPark(
   repository: MeetingRepository,
@@ -12,7 +13,7 @@ export async function confirmMeetingPark(
   parkId: string,
 ) {
   const meeting = repository.findById(meetingId);
-  if (!meeting || !hostToken || tokens.hashCapability(hostToken) !== meeting.hostTokenHash) return null;
+  if (!isAuthorizedHost(meeting, tokens, hostToken)) return null;
   const result = await buildRecommendationView(meeting, recommendations);
   const candidates = result ? [result.recommended, ...result.alternatives] : [];
   const selected = candidates.find((candidate) => candidate.parkId === parkId);

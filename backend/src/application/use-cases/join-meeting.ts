@@ -3,6 +3,7 @@ import type { CapabilityTokenService } from "../ports/capability-token-service.j
 import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
 import type { OriginPlaceProvider } from "../ports/origin-place-provider.js";
+import { addMeetingParticipant } from "../services/add-meeting-participant.js";
 
 export interface JoinMeetingInput {
   inviteToken: string;
@@ -24,23 +25,9 @@ export async function joinMeeting(
   if (!meeting || meeting.participants.length >= 8) {
     return null;
   }
-  const requestedOrigin = meeting.travelPattern === "shared_origin"
-    ? meeting.sharedOrigin
-    : { placeId: input.originPlaceId, placeName: input.originPlaceName };
-  if (!requestedOrigin) return null;
-  const origin = await origins.resolve({ id: requestedOrigin.placeId, name: requestedOrigin.placeName });
-  if (!origin) return null;
-  const requestedDestination = meeting.travelPattern === "individual_round_trip"
-    ? { id: origin.id, name: origin.name }
-    : { id: input.destinationPlaceId ?? "", name: input.destinationPlaceName ?? "" };
-  const destination = await origins.resolve(requestedDestination);
-  if (!destination) return null;
-  meeting.participants.push({
-    id: tokens.generateId(),
-    alias: input.alias,
-    origin: { placeId: origin.id, placeName: origin.name },
-    destination: destination ? { placeId: destination.id, placeName: destination.name } : null,
-  });
+  const participant = await addMeetingParticipant(meeting, tokens, origins, { ...input, role: "guest" });
+  if (!participant) return null;
+  meeting.participants.push(participant);
   repository.save(meeting);
   const result = await buildRecommendationView(meeting, recommendations);
   return {

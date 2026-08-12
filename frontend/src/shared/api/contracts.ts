@@ -41,6 +41,18 @@ export interface RecommendationResult {
   alternatives: [ParkResult, ParkResult];
   explanation: string;
   notice: string;
+  refreshAt: string | null;
+  crowdOverview: {
+    basis: "arrival" | "current";
+    referenceAt: string | null;
+    parks: Array<{
+      parkId: string;
+      parkName: string;
+      level: "relaxed" | "normal" | "busy" | "very_busy" | null;
+      label: string;
+      isRecommended: boolean;
+    }>;
+  };
   nearTie: boolean;
   travelData: {
     source: "fake" | "kakao_public_transit";
@@ -53,8 +65,9 @@ export interface HostMeeting {
   meetingAt: string;
   travelPattern: "shared_origin" | "individual_round_trip";
   sharedOriginName: string | null;
+  hostParticipantSubmitted: boolean;
   participantCount: number;
-  participants: Array<{ alias: string }>;
+  participants: Array<{ alias: string; isHost: boolean }>;
   result: RecommendationResult | null;
   recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;

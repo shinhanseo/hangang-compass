@@ -34,6 +34,30 @@ export async function buildRecommendationView(
     ?? result.ranked[2]!;
   const crowdSource = dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source;
   const travelData = dataSource.travelData(meeting.participants);
+  const crowdOverviewBasis = stage === "current" ? "arrival" as const : "current" as const;
+  const overviewParks = candidates.map((candidate) => {
+    if (crowdOverviewBasis === "arrival") {
+      const crowd = dataSource.arrivalCrowdFor(candidate.parkId, meeting.meetingAt);
+      return {
+        parkId: candidate.parkId,
+        parkName: candidate.parkName,
+        level: crowd.level,
+        label: crowd.label,
+        isRecommended: candidate.parkId === result.recommended!.parkId,
+        referenceAt: crowd.referenceAt,
+      };
+    }
+    const crowd = dataSource.currentCrowdFor(candidate.parkId);
+    return {
+      parkId: candidate.parkId,
+      parkName: candidate.parkName,
+      level: crowd.level,
+      label: crowd.label,
+      isRecommended: false,
+      referenceAt: crowd.observedAt,
+    };
+  });
+  const overviewReferenceAt = overviewParks.map((park) => park.referenceAt).filter((value): value is string => Boolean(value)).sort().at(0) ?? null;
 
   const roundTripExplanation = () => {
     if (!result.recommended?.returnTravel || !travelAlternative.returnTravel) {
@@ -51,13 +75,24 @@ export async function buildRecommendationView(
       : returnDelta < 0
         ? `귀가 최장시간을 ${Math.abs(returnDelta)}분 줄입니다`
         : `귀가 최장시간은 ${returnDelta}분 늘어납니다`;
-    return `${travelAlternative.parkName}보다 ${outbound} ${returning}.`;
+    const travelExplanation = `${travelAlternative.parkName}보다 ${outbound} ${returning}.`;
+    if (stage !== "current") {
+      return `${travelExplanation} 아직 공식 혼잡 예측 범위 밖이라 이동시간을 우선 비교했어요.`;
+    }
+    const recommendedCrowd = dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt);
+    const alternativeCrowd = dataSource.arrivalCrowdFor(travelAlternative.parkId, meeting.meetingAt);
+    const crowdExplanation = recommendedCrowd.level && alternativeCrowd.level
+      ? ` 도착 혼잡은 ${result.recommended.parkName} ${recommendedCrowd.label}, ${travelAlternative.parkName} ${alternativeCrowd.label}으로 함께 반영했어요.`
+      : " 도착 혼잡 데이터를 확인할 수 없는 후보에는 불확실성 부담을 반영했어요.";
+    return `${travelExplanation}${crowdExplanation}`;
   };
 
   const view = (candidate: EvaluatedCandidate, role: CandidateRole) => {
     const experience = dataSource.experienceFor(candidate.parkId);
     const selectionReason = role === "recommended"
-      ? "갈 때와 귀가의 평균·최장·참여자 간 차이를 각각 계산해 반씩 반영한 1순위예요."
+      ? stage === "current"
+        ? "갈 때·귀가의 이동 공평성과 약속 시각의 도착 혼잡을 함께 계산한 1순위예요."
+        : "공식 혼잡 예측 전이라 갈 때·귀가의 이동 공평성을 먼저 계산한 1차 추천이에요."
       : role === "travel_alternative"
         ? "갈 때와 귀가를 함께 본 전체 균형 점수가 다음으로 좋은 선택지예요."
         : "상위 후보 중 추천 장소와 다른 대표 즐길거리를 가진 선택지예요.";
@@ -99,13 +134,23 @@ export async function buildRecommendationView(
     ],
     nearTie: result.nearTie,
     explanation: roundTripExplanation(),
+    refreshAt: stage === "provisional" && crowdSource !== "fake"
+      ? new Date(new Date(meeting.meetingAt).getTime() - 12 * 60 * 60_000).toISOString()
+      : null,
     notice: travelData.source === "kakao_public_transit"
-      ? crowdSource === "seoul_realtime_citydata"
+      ? stage === "provisional"
+        ? "이동시간은 카카오 대중교통 경로 조회값입니다. 지금 혼잡은 오늘 기준 참고 정보이며, 약속 12시간 전부터 도착 예측을 반영해 다시 계산합니다."
+        : crowdSource === "seoul_realtime_citydata"
         ? "이동시간은 카카오 대중교통 경로 조회값이고 혼잡도는 서울시 실시간 도시데이터입니다. 이동시간은 약속 시각 시간표가 아니며 혼잡은 추정치입니다."
         : "이동시간은 카카오 대중교통 경로 조회값이고 도착 혼잡도는 고정된 fake 표본입니다. 이동시간은 약속 시각 시간표가 아닙니다."
       : crowdSource === "fake"
         ? "이동시간과 도착 혼잡도는 고정된 fake 표본입니다. 공원 특징은 서울시 공식 자료를 바탕으로 했으며 운영 상태는 방문 전에 다시 확인해야 합니다."
         : "이동시간은 고정된 fake 표본이고 혼잡도는 서울시 실시간 도시데이터입니다. 혼잡은 추정치이며 관측·예측 기준 시각을 확인해 주세요.",
+    crowdOverview: {
+      basis: crowdOverviewBasis,
+      referenceAt: overviewReferenceAt,
+      parks: overviewParks.map(({ referenceAt: _referenceAt, ...park }) => park),
+    },
     travelData,
   };
 }
@@ -117,8 +162,9 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
     meetingAt: meeting.meetingAt,
     travelPattern: meeting.travelPattern,
     sharedOriginName: meeting.sharedOrigin?.placeName ?? null,
+    hostParticipantSubmitted: meeting.participants.some((participant) => participant.role === "host"),
     participantCount: meeting.participants.length,
-    participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
+    participants: meeting.participants.map((participant) => ({ alias: participant.alias, isHost: participant.role === "host" })),
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const

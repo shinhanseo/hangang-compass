@@ -49,6 +49,15 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json({ places: result.places });
   });
 
+  router.get("/invites/:inviteToken/recommendation", async (request, response) => {
+    const result = await services.publicRecommendation(request.params.inviteToken);
+    if (!result) {
+      response.status(404).json({ error: "recommendation_not_ready" });
+      return;
+    }
+    response.json({ result });
+  });
+
   router.post("/invites/:inviteToken/participants", async (request, response) => {
     const input = participantInput(request.body);
     if (!input) {
@@ -78,6 +87,49 @@ export function createMeetingRouter(services: ApplicationServices) {
     });
   });
 
+  router.get("/meetings/:meetingId/host-access", (request, response) => {
+    const requestCookies = parseCookies(request.headers.cookie);
+    const summary = services.hostAccessSummary(
+      request.params.meetingId,
+      requestCookies[`hc_host_${request.params.meetingId}`],
+    );
+    if (!summary) {
+      response.status(403).json({ error: "host_access_denied" });
+      return;
+    }
+    response.json({ meeting: summary });
+  });
+
+  router.post("/meetings/:meetingId/recovery-link", (request, response) => {
+    const requestCookies = parseCookies(request.headers.cookie);
+    const recovery = services.createHostRecoveryLink(
+      request.params.meetingId,
+      requestCookies[`hc_host_${request.params.meetingId}`],
+    );
+    if (!recovery) {
+      response.status(403).json({ error: "host_access_denied" });
+      return;
+    }
+    response.status(201).json(recovery);
+  });
+
+  router.post("/meetings/:meetingId/recover", (request, response) => {
+    const hostToken = typeof request.body?.hostToken === "string" ? request.body.hostToken : "";
+    const inviteToken = typeof request.body?.inviteToken === "string" ? request.body.inviteToken : "";
+    if (!/^[A-Za-z0-9_-]{43}$/u.test(hostToken) || !/^[A-Za-z0-9_-]{43}$/u.test(inviteToken)) {
+      response.status(400).json({ error: "invalid_recovery_capability" });
+      return;
+    }
+    const recovered = services.recoverHostAccess(request.params.meetingId, hostToken, inviteToken);
+    if (!recovered) {
+      response.status(403).json({ error: "recovery_denied" });
+      return;
+    }
+    response.cookie(`hc_host_${request.params.meetingId}`, recovered.hostToken, capabilityCookieOptions());
+    response.cookie(`hc_invite_${request.params.meetingId}`, recovered.inviteToken, capabilityCookieOptions());
+    response.json({ hostPath: `/host/${request.params.meetingId}`, meetingAt: recovered.meetingAt });
+  });
+
   router.put("/meetings/:meetingId/shared-origin", async (request, response) => {
     const requestCookies = parseCookies(request.headers.cookie);
     const placeId = typeof request.body?.placeId === "string" ? request.body.placeId.trim() : "";
@@ -97,6 +149,25 @@ export function createMeetingRouter(services: ApplicationServices) {
       return;
     }
     response.json(result);
+  });
+
+  router.put("/meetings/:meetingId/host-participant", async (request, response) => {
+    const input = participantInput(request.body);
+    if (!input) {
+      response.status(400).json({ error: "invalid_host_participant" });
+      return;
+    }
+    const requestCookies = parseCookies(request.headers.cookie);
+    const meeting = await services.setHostParticipant({
+      meetingId: request.params.meetingId,
+      hostToken: requestCookies[`hc_host_${request.params.meetingId}`],
+      ...input,
+    });
+    if (!meeting) {
+      response.status(403).json({ error: "host_participant_denied" });
+      return;
+    }
+    response.json({ meeting });
   });
 
   router.post("/meetings/:meetingId/confirmation", async (request, response) => {

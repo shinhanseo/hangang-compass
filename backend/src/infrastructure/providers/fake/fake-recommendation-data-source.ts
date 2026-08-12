@@ -93,4 +93,10 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
       source: "fake" as const,
     };
   }
+
+  currentCrowdFor(parkId: string) {
+    const [level, label] = FAKE_ARRIVAL_CROWD[parkId as keyof typeof FAKE_ARRIVAL_CROWD]
+      ?? ["normal", "보통"] as const;
+    return { level, label, observedAt: null, fetchedAt: null, freshness: null, source: "fake" as const };
+  }
 }
