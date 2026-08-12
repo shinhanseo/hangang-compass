@@ -5,17 +5,25 @@ import { getPublicMeeting } from "./application/use-cases/get-public-meeting.js"
 import { joinMeeting } from "./application/use-cases/join-meeting.js";
 import { FakeRecommendationDataSource } from "./infrastructure/providers/fake/fake-recommendation-data-source.js";
 import type { CrowdDataProvider } from "./application/ports/crowd-data-provider.js";
+import type { TransitRouteProvider } from "./application/ports/transit-route-provider.js";
 import { LiveCrowdRecommendationDataSource } from "./infrastructure/providers/seoul/live-crowd-recommendation-data-source.js";
+import { LiveRouteRecommendationDataSource } from "./infrastructure/providers/kakao/live-route-recommendation-data-source.js";
 import { InMemoryMeetingRepository } from "./infrastructure/persistence/in-memory-meeting-repository.js";
 import { NodeCapabilityTokenService } from "./infrastructure/security/node-capability-token-service.js";
 
-export function createApplicationServices(options: { crowdProvider?: CrowdDataProvider } = {}) {
+export function createApplicationServices(options: {
+  crowdProvider?: CrowdDataProvider;
+  routeProvider?: TransitRouteProvider;
+} = {}) {
   const repository = new InMemoryMeetingRepository();
   const tokens = new NodeCapabilityTokenService();
   const fakeRecommendations = new FakeRecommendationDataSource();
-  const recommendations = options.crowdProvider
+  const crowdRecommendations = options.crowdProvider
     ? new LiveCrowdRecommendationDataSource(fakeRecommendations, options.crowdProvider)
     : fakeRecommendations;
+  const recommendations = options.routeProvider
+    ? new LiveRouteRecommendationDataSource(crowdRecommendations, options.routeProvider)
+    : crowdRecommendations;
 
   return {
     stations: () => recommendations.stations(),

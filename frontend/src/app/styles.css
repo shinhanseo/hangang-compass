@@ -55,6 +55,7 @@ input:focus, select:focus { outline: 3px solid rgb(8 127 91 / 18%); border-color
 .crowd-unavailable { color: #626b73; background: #eceff1; }
 .crowd-status { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .crowd-status small { max-width: 180px; color: var(--muted); font-size: 10px; text-align: right; }
+.data-time { color: var(--muted); font-size: 12px; }
 .result-card h2 { font-size: 26px; }
 .meeting-point { min-height: 44px; color: #5e6e67; line-height: 1.5; }
 .selection-reason { color: #33483f; font-size: 14px; line-height: 1.55; }

@@ -88,9 +88,14 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm }: {
   return (
     <section className="result" aria-live="polite">
       <div className="result-heading">
-        <p className="eyebrow">{result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"}</p>
+        <p className="eyebrow">{
+          result.travelData.source === "kakao_public_transit"
+            ? result.stage === "fake_provisional" ? "LIVE ROUTE · CROWD SAMPLE" : "LIVE ROUTE · LIVE CROWD"
+            : result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"
+        }</p>
         <h1>지금은 여기가 가장 공평해요</h1>
         <p>{result.explanation}</p>
+        {result.travelData.calculatedAt && <p className="data-time">카카오 경로 조회 기준 {dateTime(result.travelData.calculatedAt)}</p>}
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}
       </div>
       <div className="result-grid">

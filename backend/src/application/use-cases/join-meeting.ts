@@ -25,8 +25,12 @@ export async function joinMeeting(
     stationId: input.stationId,
   });
   repository.save(meeting);
+  const result = await buildRecommendationView(meeting, recommendations);
   return {
     participantCount: meeting.participants.length,
-    result: await buildRecommendationView(meeting, recommendations),
+    result,
+    recommendationStatus: meeting.participants.length < 2
+      ? "waiting_for_participants" as const
+      : result ? "ready" as const : "route_unavailable" as const,
   };
 }

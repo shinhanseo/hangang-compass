@@ -38,7 +38,7 @@ test("prepares all parks and injects arrival forecast into candidate conditions"
     },
   };
   const source = new LiveCrowdRecommendationDataSource(new FakeRecommendationDataSource(), provider, () => now);
-  await source.prepareFor(meetingAt);
+  await source.prepareFor([], meetingAt);
   assert.equal(calls, 11);
   assert.equal(source.stageFor(meetingAt), "current");
   const candidates = source.candidates([
@@ -58,7 +58,7 @@ test("keeps a far-future meeting provisional and labels crowd outside the foreca
   };
   const source = new LiveCrowdRecommendationDataSource(new FakeRecommendationDataSource(), provider, () => now);
   const future = "2026-08-13T05:00:00.000Z";
-  await source.prepareFor(future);
+  await source.prepareFor([], future);
   assert.equal(source.stageFor(future), "provisional");
   assert.equal(source.arrivalCrowdFor("yeouido", future).status, "outside_forecast_window");
 });

@@ -2,29 +2,8 @@ import type { RecommendationDataSource } from "../../../application/ports/recomm
 import type { Participant } from "../../../domain/meeting/meeting.js";
 import type { CandidateInput } from "../../../domain/recommendation/recommendation.js";
 import { parkExperienceFor } from "../../catalog/park-experience-catalog.js";
-
-const FAKE_STATIONS = [
-  { id: "hongdae", name: "홍대입구역" },
-  { id: "gangnam", name: "강남역" },
-  { id: "nowon", name: "노원역" },
-  { id: "konkuk", name: "건대입구역" },
-  { id: "sadang", name: "사당역" },
-  { id: "yeongdeungpo", name: "영등포역" },
-] as const;
-
-const PARKS = [
-  ["gangseo", "강서한강공원", "강서안내센터 출입구 앞"],
-  ["gwangnaru", "광나루한강공원", "광나루안내센터 출입구 앞"],
-  ["nanji", "난지한강공원", "난지안내센터 출입구 앞"],
-  ["ttukseom", "뚝섬한강공원", "뚝섬자벌레 1층 외부 출입구 앞"],
-  ["mangwon", "망원한강공원", "망원안내센터 출입구 앞"],
-  ["banpo", "반포한강공원", "반포안내센터 출입구 앞"],
-  ["yanghwa", "양화한강공원", "양화안내센터 출입구 앞"],
-  ["yeouido", "여의도한강공원", "여의도안내센터 출입구 앞"],
-  ["ichon", "이촌한강공원", "이촌안내센터 출입구 앞"],
-  ["jamsil", "잠실한강공원", "잠실안내센터 출입구 앞"],
-  ["jamwon", "잠원한강공원", "잠원안내센터 출입구 앞"],
-] as const;
+import { MEETING_POINT_CATALOG } from "../../catalog/meeting-point-catalog.js";
+import { STATION_CATALOG } from "../../catalog/station-catalog.js";
 
 const TIMES: Record<string, Record<string, number>> = {
   hongdae: { gangseo: 48, gwangnaru: 58, nanji: 40, ttukseom: 40, mangwon: 24, banpo: 38, yanghwa: 27, yeouido: 22, ichon: 31, jamsil: 48, jamwon: 42 },
@@ -50,13 +29,13 @@ const FAKE_ARRIVAL_CROWD = {
 };
 
 function stationExists(stationId: string): boolean {
-  return FAKE_STATIONS.some((station) => station.id === stationId);
+  return STATION_CATALOG.some((station) => station.id === stationId);
 }
 
 function fakeCandidates(
   participants: Participant[],
 ): CandidateInput[] {
-  return PARKS.map(([parkId, parkName]) => ({
+  return MEETING_POINT_CATALOG.map(({ parkId, parkName }) => ({
     parkId,
     parkName,
     routes: participants.map((participant) => ({
@@ -75,19 +54,19 @@ function fakeCandidates(
 }
 
 function meetingPointFor(parkId: string): string {
-  return PARKS.find(([id]) => id === parkId)?.[2] ?? "만남 지점 확인 중";
+  return MEETING_POINT_CATALOG.find((point) => point.parkId === parkId)?.meetingInstruction ?? "만남 지점 확인 중";
 }
 
 export class FakeRecommendationDataSource implements RecommendationDataSource {
   stations() {
-    return FAKE_STATIONS;
+    return STATION_CATALOG;
   }
 
   hasStation(stationId: string): boolean {
     return stationExists(stationId);
   }
 
-  async prepareFor(_meetingAt: string): Promise<void> {}
+  async prepareFor(_participants: Participant[], _meetingAt: string): Promise<void> {}
 
   stageFor() {
     return "provisional" as const;
@@ -103,6 +82,10 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
 
   experienceFor(parkId: string) {
     return parkExperienceFor(parkId);
+  }
+
+  travelData(_participants: Participant[]) {
+    return { source: "fake" as const, calculatedAt: null };
   }
 
   arrivalCrowdFor(parkId: string, _meetingAt: string) {

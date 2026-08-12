@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { CrowdDataProvider } from "../../src/application/ports/crowd-data-provider.js";
+import type { TransitRouteProvider } from "../../src/application/ports/transit-route-provider.js";
 import { createApplicationServices } from "../../src/composition-root.js";
 import { CachedCrowdDataProvider } from "../../src/infrastructure/providers/cached-crowd-data-provider.js";
+import { CachedTransitRouteProvider } from "../../src/infrastructure/providers/cached-transit-route-provider.js";
 import { createApp } from "../../src/presentation/http/app.ts";
 
 test("health endpoint returns safe headers and service status", async (context) => {
@@ -101,7 +103,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.equal((await refreshedHost.json()).meeting.confirmedParkId, selectedParkId);
 });
 
-test("live crowd is cached and exposed as an arrival forecast through HTTP", async (context) => {
+test("live crowd and transit routes are cached and exposed through HTTP", async (context) => {
   const meetingAt = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
   let providerCalls = 0;
   const source: CrowdDataProvider = {
@@ -127,8 +129,29 @@ test("live crowd is cached and exposed as an arrival forecast through HTTP", asy
       };
     },
   };
+  let routeCalls = 0;
+  const routeSource: TransitRouteProvider = {
+    routeFor: async (origin, destination) => {
+      routeCalls += 1;
+      return {
+        status: "available",
+        route: {
+          totalMinutes: origin.id === "hongdae" ? 20 : destination.id === "yeouido" ? 30 : 40,
+          transfers: 1,
+          fareWon: 1400,
+          walkingMinutes: 3,
+          calculatedAt: "2026-08-12T05:00:00.000Z",
+          source: "kakao_public_transit",
+        },
+      };
+    },
+  };
   const services = createApplicationServices({
     crowdProvider: new CachedCrowdDataProvider(source, 5 * 60_000),
+    routeProvider: new CachedTransitRouteProvider(routeSource, {
+      ttlMs: 2 * 60 * 60_000,
+      maxRequestsPerDay: 900,
+    }),
   });
   const server = createApp(services).listen(0, "127.0.0.1");
   context.after(() => server.close());
@@ -160,5 +183,38 @@ test("live crowd is cached and exposed as an arrival forecast through HTTP", asy
   assert.equal(result.recommended.arrivalCrowd.status, "live_forecast");
   assert.equal(result.recommended.arrivalCrowd.source, "seoul_realtime_citydata");
   assert.equal(result.recommended.arrivalCrowd.referenceAt, meetingAt);
+  assert.equal(result.travelData.source, "kakao_public_transit");
+  assert.equal(result.travelData.calculatedAt, "2026-08-12T05:00:00.000Z");
   assert.equal(providerCalls, 11);
+  assert.equal(routeCalls, 22);
+});
+
+test("route outage returns an explicit unavailable state instead of fake minutes", async (context) => {
+  const routeSource: TransitRouteProvider = {
+    routeFor: async () => ({ status: "unavailable", reason: "network_error" }),
+  };
+  const services = createApplicationServices({ routeProvider: routeSource });
+  const server = createApp(services).listen(0, "127.0.0.1");
+  context.after(() => server.close());
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const created = await (await fetch(`${baseUrl}/api/meetings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString() }),
+  })).json();
+  const inviteToken = created.invitePath.split("/").at(-1);
+  let secondJoin: Response | null = null;
+  for (const [alias, stationId] of [["민지", "hongdae"], ["준호", "gangnam"]]) {
+    secondJoin = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ alias, stationId }),
+    });
+  }
+  const body = await secondJoin!.json();
+  assert.equal(body.result, null);
+  assert.equal(body.recommendationStatus, "route_unavailable");
 });

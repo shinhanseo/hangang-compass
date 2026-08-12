@@ -20,8 +20,9 @@
 - 균형 중심 공평성 방향 승인, 대표 5조합×11개 공원 실경로 검증 완료
 - 최소 위치 입력·자동 삭제·공유 링크 권한 정책 확정
 - TypeScript/React/Express 애플리케이션 하네스와 CI 구성 완료
-- fake 데이터 기반 약속 생성 → 친구 링크 참여 → 추천·대안 표시 수직 슬라이스 완료
-- 실제 사용자 약속 사례 비교와 실데이터 통합 예정
+- 실제 카카오 대중교통 경로와 서울시 도착 혼잡 예측을 약속 생성 → 링크 참여 → 추천·대안 → 방장 확정 여정에 연결
+- 경로 실패 시 fake 시간으로 대체하지 않는 장애 상태와 서버 메모리 캐시·무료 호출량 방어선 구현
+- 실제 사용자 약속 사례 비교와 날씨·행사·통제 통합 예정
 
 ## MVP
 
@@ -49,7 +50,7 @@
 - [Privacy and sharing-link threat model](./docs/PRIVACY_THREAT_MODEL.md)
 - [Privacy notice draft](./docs/PRIVACY_NOTICE_DRAFT.md)
 - [AI-assisted development](./docs/AI_DEVELOPMENT.md)
-- [Clickable fake journey](./docs/DEMO.md)
+- [Clickable core journey](./docs/DEMO.md)
 - [Risk-first roadmap](./tasks/ROADMAP.md)
 - [Data access spike](./tasks/spikes/001-data-access.md)
 - [Recommendation spike](./tasks/spikes/002-recommendation.md)
@@ -72,7 +73,7 @@ npm run dev:web
 npm run dev:api
 ```
 
-`npm run check`는 TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 현재 클릭 가능한 fake 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
+`npm run check`는 비밀값 검사, TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 키가 없으면 안전한 fixture로 실행되고, 키가 있으면 카카오 경로와 서울시 혼잡을 서버에서만 조회합니다. 현재 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
 
 ## Repository structure
 

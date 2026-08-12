@@ -12,11 +12,15 @@ export interface StationView {
 export interface RecommendationDataSource {
   stations(): readonly StationView[];
   hasStation(stationId: string): boolean;
-  prepareFor(meetingAt: string): Promise<void>;
+  prepareFor(participants: Participant[], meetingAt: string): Promise<void>;
   stageFor(meetingAt: string): RecommendationStage;
   candidates(participants: Participant[], meetingAt: string): CandidateInput[];
   meetingPointFor(parkId: string): string;
   experienceFor(parkId: string): ParkExperience;
+  travelData(participants: Participant[]): {
+    source: "fake" | "kakao_public_transit";
+    calculatedAt: string | null;
+  };
   arrivalCrowdFor(parkId: string, meetingAt: string): {
     level: CrowdLevel | null;
     label: string;

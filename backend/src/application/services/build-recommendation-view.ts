@@ -12,7 +12,7 @@ export async function buildRecommendationView(
   dataSource: RecommendationDataSource,
 ): Promise<RecommendationResultView | null> {
   if (meeting.participants.length < 2) return null;
-  await dataSource.prepareFor(meeting.meetingAt);
+  await dataSource.prepareFor(meeting.participants, meeting.meetingAt);
   const stage = dataSource.stageFor(meeting.meetingAt);
   const candidates = dataSource.candidates(meeting.participants, meeting.meetingAt);
   const result = recommend({
@@ -31,6 +31,8 @@ export async function buildRecommendationView(
   const experienceAlternative = result.ranked.slice(2, 7).find((candidate) =>
     dataSource.experienceFor(candidate.parkId).signatureTags.some((tag) => !usedTags.has(tag)))
     ?? result.ranked[2]!;
+  const crowdSource = dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source;
+  const travelData = dataSource.travelData(meeting.participants);
 
   const view = (candidate: EvaluatedCandidate, role: CandidateRole) => {
     const experience = dataSource.experienceFor(candidate.parkId);
@@ -71,7 +73,7 @@ export async function buildRecommendationView(
   };
 
   return {
-    stage: dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source === "fake"
+    stage: crowdSource === "fake"
       ? "fake_provisional"
       : stage === "current" ? "live_current" : "live_provisional",
     recommended: view(result.recommended, "recommended"),
@@ -81,19 +83,28 @@ export async function buildRecommendationView(
     ],
     nearTie: result.nearTie,
     explanation: result.comparison?.summary ?? "이동 공평성을 기준으로 비교했습니다.",
-    notice: dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source === "fake"
-      ? "이동시간과 도착 혼잡도는 고정된 fake 표본입니다. 공원 특징은 서울시 공식 자료를 바탕으로 했으며 운영 상태는 방문 전에 다시 확인해야 합니다."
-      : "이동시간은 고정된 fake 표본이고 혼잡도는 서울시 실시간 도시데이터입니다. 혼잡은 추정치이며 관측·예측 기준 시각을 확인해 주세요.",
+    notice: travelData.source === "kakao_public_transit"
+      ? crowdSource === "seoul_realtime_citydata"
+        ? "이동시간은 카카오 대중교통 경로 조회값이고 혼잡도는 서울시 실시간 도시데이터입니다. 이동시간은 약속 시각 시간표가 아니며 혼잡은 추정치입니다."
+        : "이동시간은 카카오 대중교통 경로 조회값이고 도착 혼잡도는 고정된 fake 표본입니다. 이동시간은 약속 시각 시간표가 아닙니다."
+      : crowdSource === "fake"
+        ? "이동시간과 도착 혼잡도는 고정된 fake 표본입니다. 공원 특징은 서울시 공식 자료를 바탕으로 했으며 운영 상태는 방문 전에 다시 확인해야 합니다."
+        : "이동시간은 고정된 fake 표본이고 혼잡도는 서울시 실시간 도시데이터입니다. 혼잡은 추정치이며 관측·예측 기준 시각을 확인해 주세요.",
+    travelData,
   };
 }
 
 export async function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource) {
+  const result = await buildRecommendationView(meeting, dataSource);
   return {
     id: meeting.id,
     meetingAt: meeting.meetingAt,
     participantCount: meeting.participants.length,
     participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
-    result: await buildRecommendationView(meeting, dataSource),
+    result,
+    recommendationStatus: meeting.participants.length < 2
+      ? "waiting_for_participants" as const
+      : result ? "ready" as const : "route_unavailable" as const,
     confirmedParkId: meeting.confirmedParkId,
   };
 }

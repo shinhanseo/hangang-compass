@@ -38,6 +38,10 @@ export interface RecommendationResult {
   explanation: string;
   notice: string;
   nearTie: boolean;
+  travelData: {
+    source: "fake" | "kakao_public_transit";
+    calculatedAt: string | null;
+  };
 }
 
 export interface HostMeeting {
@@ -46,5 +50,6 @@ export interface HostMeeting {
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResult | null;
+  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;
 }

@@ -13,6 +13,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [result, setResult] = useState<Recommendation | null>(null);
   const [count, setCount] = useState(0);
   const [error, setError] = useState("");
+  const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -30,12 +31,17 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
     event.preventDefault();
     setError("");
     try {
-      const joined = await api<{ participantCount: number; result: Recommendation | null }>(
+      const joined = await api<{
+        participantCount: number;
+        result: Recommendation | null;
+        recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+      }>(
         `/api/invites/${inviteToken}/participants`,
         { method: "POST", body: JSON.stringify({ alias, stationId }) },
       );
       setCount(joined.participantCount);
       setResult(joined.result);
+      setRecommendationUnavailable(joined.recommendationStatus === "route_unavailable");
     } catch {
       setError("별칭과 출발역을 다시 확인해 주세요.");
     }
@@ -44,6 +50,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   if (error && !meeting) return <main className="shell narrow"><div className="panel"><h1>참여할 수 없어요</h1><p>{error}</p></div></main>;
   if (!meeting) return <main className="shell narrow"><p>초대장을 불러오는 중…</p></main>;
   if (result) return <main className="shell"><RecommendationResult result={result} /><button className="secondary restart" onClick={() => { setResult(null); setAlias(""); }}>다른 친구 입력도 테스트하기</button></main>;
+  if (recommendationUnavailable) return <main className="shell narrow"><section className="panel"><h1>이동 경로를 확인하지 못했어요</h1><p>일부 출발역에서 한강공원까지의 경로가 없어 지금은 추천을 만들 수 없습니다. 잠시 후 방장 화면에서 다시 확인해 주세요.</p></section></main>;
 
   return (
     <main className="shell narrow">

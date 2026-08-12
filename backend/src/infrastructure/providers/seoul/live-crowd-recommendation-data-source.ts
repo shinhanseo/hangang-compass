@@ -27,8 +27,10 @@ export class LiveCrowdRecommendationDataSource implements RecommendationDataSour
   hasStation(stationId: string) { return this.#base.hasStation(stationId); }
   meetingPointFor(parkId: string) { return this.#base.meetingPointFor(parkId); }
   experienceFor(parkId: string) { return this.#base.experienceFor(parkId); }
+  travelData(participants: Participant[]) { return this.#base.travelData(participants); }
 
-  async prepareFor(_meetingAt: string): Promise<void> {
+  async prepareFor(participants: Participant[], meetingAt: string): Promise<void> {
+    await this.#base.prepareFor(participants, meetingAt);
     const results = await Promise.all(SEOUL_HANGANG_AREAS.map(async (area) => ({
       parkId: area.parkId,
       result: await this.#crowd.crowdFor(area.parkId, area.areaName),

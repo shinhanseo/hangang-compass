@@ -32,6 +32,10 @@ export interface RecommendationResultView {
   nearTie: boolean;
   explanation: string;
   notice: string;
+  travelData: {
+    source: "fake" | "kakao_public_transit";
+    calculatedAt: string | null;
+  };
 }
 
 export interface HostMeetingView {
@@ -40,6 +44,7 @@ export interface HostMeetingView {
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResultView | null;
+  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;
 }
 

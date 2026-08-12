@@ -56,7 +56,9 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
         </div>
         {data.meeting.participants.length > 0 && <p className="submitted">참여 완료: {data.meeting.participants.map((item) => item.alias).join(", ")}</p>}
       </section>
-      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={(park) => void confirmPark(park)} /> : (
+      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={(park) => void confirmPark(park)} /> : data.meeting.recommendationStatus === "route_unavailable" ? (
+        <section className="waiting"><h2>이동 경로를 확인하지 못했어요</h2><p>경로 API가 일부 또는 전체 후보를 계산하지 못했습니다. 잠시 후 새로고침해 주세요.</p></section>
+      ) : (
         <section className="waiting"><h2>친구 2명의 입력을 기다리고 있어요</h2><p>공유 링크를 다른 탭에서 열어 두 번 제출한 뒤 새로고침하면 추천이 나타납니다.</p></section>
       )}
     </main>
