@@ -1,5 +1,6 @@
+import type { CrowdLevel } from "../crowd/crowd-snapshot.js";
+
 export type Freshness = "fresh" | "stale" | "unavailable";
-export type CrowdLevel = "relaxed" | "normal" | "busy" | "very_busy";
 export type RecommendationStage = "provisional" | "current";
 
 export interface FairnessPolicy {

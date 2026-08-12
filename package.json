@@ -16,6 +16,7 @@
     "dev:api": "npm run dev --workspace @hangang-compass/backend",
     "dev:web": "npm run dev --workspace @hangang-compass/frontend",
     "security:check": "node scripts/check-repository-secrets.mjs",
+    "spike:seoul-crowd": "tsx scripts/inspect-seoul-crowd.ts",
     "test": "tsx --test scripts/*.test.mjs && npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

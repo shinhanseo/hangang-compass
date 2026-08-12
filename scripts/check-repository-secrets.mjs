@@ -7,7 +7,7 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z", "--cached", "--other
   .filter((file) => file && existsSync(file));
 const forbiddenFiles = trackedFiles.filter((file) => /^\.env(?:\.|$)/u.test(file) && file !== ".env.example");
 const patterns = [
-  { name: "configured_api_key", expression: /^(?:SEOUL_DATA_API_KEY|KAKAO_REST_API_KEY)=\S+/gmu },
+  { name: "configured_api_key", expression: /^(?:SEOUL_OPEN_DATA_KEY|SEOUL_DATA_API_KEY|KAKAO_REST_API_KEY)=\S+/gmu },
   { name: "literal_kakao_authorization", expression: /KakaoAK\s+[A-Za-z0-9_-]{16,}/gu },
   { name: "private_key", expression: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/gu },
 ];
