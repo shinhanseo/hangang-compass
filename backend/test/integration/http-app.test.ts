@@ -47,7 +47,7 @@ test("searches selectable public places only through a valid invite", async (con
   const created = await (await fetch(`${baseUrl}/api/meetings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ meetingAt: new Date(Date.now() + 60_000).toISOString() }),
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 60_000).toISOString(), tripMode: "outbound_only" }),
   })).json();
   const inviteToken = created.invitePath.split("/").at(-1);
 
@@ -72,7 +72,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   const createResponse = await fetch(`${baseUrl}/api/meetings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ meetingAt }),
+    body: JSON.stringify({ meetingAt, tripMode: "outbound_only" }),
   });
   assert.equal(createResponse.status, 201);
   const hostCookie = createResponse.headers.get("set-cookie");
@@ -186,7 +186,7 @@ test("live crowd and transit routes are cached and exposed through HTTP", async 
   const createdResponse = await fetch(`${baseUrl}/api/meetings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ meetingAt }),
+    body: JSON.stringify({ meetingAt, tripMode: "outbound_only" }),
   });
   const hostCookie = createdResponse.headers.get("set-cookie")!;
   const created = await createdResponse.json();
@@ -226,7 +226,7 @@ test("route outage returns an explicit unavailable state instead of fake minutes
   const created = await (await fetch(`${baseUrl}/api/meetings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ meetingAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString() }),
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString(), tripMode: "outbound_only" }),
   })).json();
   const inviteToken = created.invitePath.split("/").at(-1);
   let secondJoin: Response | null = null;
@@ -240,4 +240,69 @@ test("route outage returns an explicit unavailable state instead of fake minutes
   const body = await secondJoin!.json();
   assert.equal(body.result, null);
   assert.equal(body.recommendationStatus, "route_unavailable");
+});
+
+test("round-trip meeting collects a private next place and compares both directions", async (context) => {
+  let routeCalls = 0;
+  const routeSource: TransitRouteProvider = {
+    routeFor: async (origin, destination) => {
+      routeCalls += 1;
+      return {
+        status: "available",
+        route: {
+          totalMinutes: origin.id === "hongdae" ? 18 : destination.id === "gangnam" ? 27 : 36,
+          transfers: null,
+          fareWon: null,
+          walkingMinutes: null,
+          calculatedAt: "2026-08-12T05:00:00.000Z",
+          source: "kakao_public_transit",
+        },
+      };
+    },
+  };
+  const server = createApp(createApplicationServices({ routeProvider: new CachedTransitRouteProvider(routeSource, {
+    ttlMs: 2 * 60 * 60_000,
+    maxRequestsPerDay: 900,
+  }) })).listen(0, "127.0.0.1");
+  context.after(() => server.close());
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const createdResponse = await fetch(`${baseUrl}/api/meetings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString(), tripMode: "round_trip" }),
+  });
+  const hostCookie = createdResponse.headers.get("set-cookie")!;
+  const created = await createdResponse.json();
+  const inviteToken = created.invitePath.split("/").at(-1);
+  const publicMeeting = await (await fetch(`${baseUrl}/api/invites/${inviteToken}`)).json();
+  assert.equal(publicMeeting.meeting.tripMode, "round_trip");
+
+  for (const participant of [
+    { alias: "민지", originPlaceId: "hongdae", originPlaceName: "홍대입구역", destinationPlaceId: "gangnam", destinationPlaceName: "강남역" },
+    { alias: "준호", originPlaceId: "gangnam", originPlaceName: "강남역", destinationPlaceId: "hongdae", destinationPlaceName: "홍대입구역" },
+  ]) {
+    const joined = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(participant),
+    });
+    assert.equal(joined.status, 201);
+  }
+
+  const hostView = await (await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
+    headers: { cookie: hostCookie.split(";")[0]! },
+  })).json();
+  const result = hostView.meeting.result;
+  assert.equal(hostView.meeting.tripMode, "round_trip");
+  assert.equal(result.tripMode, "round_trip");
+  assert.ok(result.recommended.returnTravel);
+  assert.ok(result.recommended.participantTimes.every((item: { returnMinutes: number | null }) => item.returnMinutes !== null));
+  assert.match(result.explanation, /갈 때/u);
+  assert.match(result.explanation, /귀가 최장시간/u);
+  assert.equal(JSON.stringify(hostView).includes("originPlace"), false);
+  assert.equal(JSON.stringify(hostView).includes("destinationPlace"), false);
+  assert.equal(routeCalls, 44);
 });

@@ -11,7 +11,8 @@ export interface ParkResult {
   parkName: string;
   meetingPoint: string;
   travel: { averageMinutes: number; maximumMinutes: number; rangeMinutes: number };
-  participantTimes: Array<{ alias: string; minutes: number }>;
+  returnTravel: { averageMinutes: number; maximumMinutes: number; rangeMinutes: number } | null;
+  participantTimes: Array<{ alias: string; minutes: number; returnMinutes: number | null }>;
   arrivalCrowd: {
     level: "relaxed" | "normal" | "busy" | "very_busy" | null;
     label: string;
@@ -34,6 +35,7 @@ export interface ParkResult {
 }
 
 export interface RecommendationResult {
+  tripMode: "outbound_only" | "round_trip";
   stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResult;
   alternatives: [ParkResult, ParkResult];
@@ -49,6 +51,7 @@ export interface RecommendationResult {
 export interface HostMeeting {
   id: string;
   meetingAt: string;
+  tripMode: "outbound_only" | "round_trip";
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResult | null;

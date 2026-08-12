@@ -37,6 +37,10 @@ function fakeCandidates(
       participantId: participant.id,
       minutes: TIMES[participant.origin.placeId]?.[parkId] ?? null,
     })),
+    returnRoutes: participants.map((participant) => ({
+      participantId: participant.id,
+      minutes: participant.destination ? TIMES[participant.destination.placeId]?.[parkId] ?? null : null,
+    })),
     meetingPointStatus: "provisional",
     facilities: { restroom: true },
     conditions: {

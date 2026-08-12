@@ -31,8 +31,17 @@ function CrowdStatus({ crowd }: { crowd: ParkResult["arrivalCrowd"] }) {
   );
 }
 
-function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
+function TravelMetrics({ title, travel }: { title: string; travel: ParkResult["travel"] }) {
+  return <section className="travel-metrics"><h3>{title}</h3><dl className="metrics">
+    <div><dt>평균</dt><dd>{travel.averageMinutes}분</dd></div>
+    <div><dt>최장</dt><dd>{travel.maximumMinutes}분</dd></div>
+    <div><dt>차이</dt><dd>{travel.rangeMinutes}분</dd></div>
+  </dl></section>;
+}
+
+function ResultCard({ park, tripMode, primary = false, confirmed = false, onConfirm }: {
   park: ParkResult;
+  tripMode: Recommendation["tripMode"];
   primary?: boolean;
   confirmed?: boolean;
   onConfirm?: (park: ParkResult) => void;
@@ -46,11 +55,8 @@ function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
       <h2>{park.parkName}</h2>
       <p className="meeting-point">{park.meetingPoint}</p>
       <p className="selection-reason">{park.selectionReason}</p>
-      <dl className="metrics">
-        <div><dt>평균</dt><dd>{park.travel.averageMinutes}분</dd></div>
-        <div><dt>최장</dt><dd>{park.travel.maximumMinutes}분</dd></div>
-        <div><dt>차이</dt><dd>{park.travel.rangeMinutes}분</dd></div>
-      </dl>
+      <TravelMetrics title={tripMode === "round_trip" ? "갈 때" : "한강까지"} travel={park.travel} />
+      {park.returnTravel && <TravelMetrics title="약속 후" travel={park.returnTravel} />}
       <section className="experience">
         <h3>여기서 즐길 수 있어요</h3>
         <p>{park.experience.summary}</p>
@@ -67,7 +73,7 @@ function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
         {park.participantTimes.map((participant) => (
           <li key={participant.alias}>
             <span>{participant.alias}</span>
-            <strong>{participant.minutes}분</strong>
+            <strong>{participant.minutes}분{participant.returnMinutes !== null ? ` → ${participant.returnMinutes}분` : ""}</strong>
           </li>
         ))}
       </ul>
@@ -94,14 +100,15 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm }: {
             : result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"
         }</p>
         <h1>지금은 여기가 가장 공평해요</h1>
+        <p className="mode-summary">{result.tripMode === "round_trip" ? "갈 때 50% · 약속 후 50%로 비교했어요." : "한강으로 갈 때의 이동만 비교했어요."}</p>
         <p>{result.explanation}</p>
         {result.travelData.calculatedAt && <p className="data-time">카카오 경로 조회 기준 {dateTime(result.travelData.calculatedAt)}</p>}
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}
       </div>
       <div className="result-grid">
-        <ResultCard park={result.recommended} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
+        <ResultCard park={result.recommended} tripMode={result.tripMode} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
         {result.alternatives.map((park) => (
-          <ResultCard key={park.parkId} park={park} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />
+          <ResultCard key={park.parkId} park={park} tripMode={result.tripMode} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />
         ))}
       </div>
       <p className="prototype-notice">{result.notice}</p>

@@ -53,3 +53,32 @@ test("keeps a failed participant route null so the candidate is excluded", async
   assert.ok(source.candidates(participants, "2026-08-13T05:00:00.000Z")
     .every((candidate) => candidate.routes[1]?.minutes === null));
 });
+
+test("round-trip preparation deduplicates places and keeps direction-specific routes", async () => {
+  let calls = 0;
+  const routes: TransitRouteProvider = {
+    routeFor: async (origin, destination) => {
+      calls += 1;
+      return {
+        status: "available",
+        route: {
+          totalMinutes: origin.id === "hongdae" ? 20 : destination.id === "gangnam" ? 35 : 45,
+          transfers: null, fareWon: null, walkingMinutes: null,
+          calculatedAt: "2026-08-12T05:00:00.000Z",
+          source: "kakao_public_transit",
+        },
+      };
+    },
+  };
+  const source = new LiveRouteRecommendationDataSource(new FakeRecommendationDataSource(), routes, new FakeOriginPlaceProvider());
+  const participants = [
+    { id: "p1", alias: "민지", origin: { placeId: "hongdae", placeName: "홍대입구역" }, destination: { placeId: "gangnam", placeName: "강남역" } },
+    { id: "p2", alias: "준호", origin: { placeId: "hongdae", placeName: "홍대입구역" }, destination: { placeId: "gangnam", placeName: "강남역" } },
+  ];
+
+  await source.prepareFor(participants, "2026-08-13T05:00:00.000Z");
+  assert.equal(calls, 22);
+  const candidate = source.candidates(participants, "2026-08-13T05:00:00.000Z").find((item) => item.parkId === "yeouido");
+  assert.deepEqual(candidate?.routes.map((route) => route.minutes), [20, 20]);
+  assert.deepEqual(candidate?.returnRoutes?.map((route) => route.minutes), [35, 35]);
+});

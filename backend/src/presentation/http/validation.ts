@@ -10,11 +10,19 @@ export function participantInput(body: unknown) {
   const alias = typeof candidate.alias === "string" ? candidate.alias.trim() : "";
   const originPlaceId = typeof candidate.originPlaceId === "string" ? candidate.originPlaceId.trim() : "";
   const originPlaceName = typeof candidate.originPlaceName === "string" ? candidate.originPlaceName.trim() : "";
+  const destinationPlaceId = typeof candidate.destinationPlaceId === "string" ? candidate.destinationPlaceId.trim() : "";
+  const destinationPlaceName = typeof candidate.destinationPlaceName === "string" ? candidate.destinationPlaceName.trim() : "";
   return alias.length >= 1 && alias.length <= 20
     && originPlaceId.length >= 1 && originPlaceId.length <= 80
     && originPlaceName.length >= 1 && originPlaceName.length <= 100
-    ? { alias, originPlaceId, originPlaceName }
+    && (destinationPlaceId.length === 0 || destinationPlaceId.length <= 80)
+    && (destinationPlaceName.length === 0 || destinationPlaceName.length <= 100)
+    ? { alias, originPlaceId, originPlaceName, destinationPlaceId, destinationPlaceName }
     : null;
+}
+
+export function tripMode(value: unknown) {
+  return value === "outbound_only" || value === "round_trip" ? value : null;
 }
 
 export function placeQuery(value: unknown): string | null {

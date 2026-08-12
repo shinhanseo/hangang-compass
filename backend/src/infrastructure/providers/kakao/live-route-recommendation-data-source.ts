@@ -53,7 +53,26 @@ export class LiveRouteRecommendationDataSource implements RecommendationDataSour
         resolvedOrigin,
         { id: point.parkId, name: point.candidateName, query: point.poiQuery, officialAddress: point.officialAddress },
       );
-      this.#results.set(`${origin.id}:${point.parkId}`, result);
+      this.#results.set(`outbound:${origin.id}:${point.parkId}`, result);
+    });
+    const uniqueDestinations = [...new Map(participants.flatMap((participant) => participant.destination ? [[
+      participant.destination.placeId,
+      { id: participant.destination.placeId, name: participant.destination.placeName },
+    ] as const] : [])).values()];
+    const resolvedDestinations = new Map((await Promise.all(uniqueDestinations.map(async (destination) => [
+      destination.id,
+      await this.#origins.resolve(destination),
+    ] as const))).filter((entry) => entry[1] !== null));
+    const returnTasks = uniqueDestinations.flatMap((destination) =>
+      MEETING_POINT_CATALOG.map((point) => ({ destination, point })));
+    await mapWithConcurrency(returnTasks, 4, async ({ destination, point }) => {
+      const resolvedDestination = resolvedDestinations.get(destination.id);
+      if (!resolvedDestination) return;
+      const result = await this.#routes.routeFor(
+        { id: point.parkId, name: point.candidateName, query: point.poiQuery, officialAddress: point.officialAddress },
+        resolvedDestination,
+      );
+      this.#results.set(`return:${destination.id}:${point.parkId}`, result);
     });
   }
 
@@ -61,7 +80,16 @@ export class LiveRouteRecommendationDataSource implements RecommendationDataSour
     return this.#base.candidates(participants, meetingAt).map((candidate) => ({
       ...candidate,
       routes: participants.map((participant) => {
-        const result = this.#results.get(`${participant.origin.placeId}:${candidate.parkId}`);
+        const result = this.#results.get(`outbound:${participant.origin.placeId}:${candidate.parkId}`);
+        return {
+          participantId: participant.id,
+          minutes: result?.status === "available" ? result.route.totalMinutes : null,
+        };
+      }),
+      returnRoutes: participants.map((participant) => {
+        const result = participant.destination
+          ? this.#results.get(`return:${participant.destination.placeId}:${candidate.parkId}`)
+          : undefined;
         return {
           participantId: participant.id,
           minutes: result?.status === "available" ? result.route.totalMinutes : null,
@@ -71,9 +99,12 @@ export class LiveRouteRecommendationDataSource implements RecommendationDataSour
   }
 
   travelData(participants: Participant[]) {
-    const placeIds = new Set(participants.map((participant) => participant.origin.placeId));
+    const routeKeys = new Set(participants.flatMap((participant) => [
+      `outbound:${participant.origin.placeId}`,
+      ...(participant.destination ? [`return:${participant.destination.placeId}`] : []),
+    ]));
     const available = [...this.#results.entries()].flatMap(([key, result]) =>
-      placeIds.has(key.split(":", 1)[0]!) && result.status === "available"
+      [...routeKeys].some((prefix) => key.startsWith(`${prefix}:`)) && result.status === "available"
         ? [result.route.calculatedAt]
         : []);
     return {

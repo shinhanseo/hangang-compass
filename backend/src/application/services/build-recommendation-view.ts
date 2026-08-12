@@ -17,6 +17,7 @@ export async function buildRecommendationView(
   const candidates = dataSource.candidates(meeting.participants, meeting.meetingAt);
   const result = recommend({
     stage,
+    tripMode: meeting.tripMode,
     participantIds: meeting.participants.map((participant) => participant.id),
     candidates,
   }, FAIRNESS_POLICIES.balanced);
@@ -34,15 +35,38 @@ export async function buildRecommendationView(
   const crowdSource = dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source;
   const travelData = dataSource.travelData(meeting.participants);
 
+  const roundTripExplanation = () => {
+    if (meeting.tripMode !== "round_trip" || !result.recommended?.returnTravel || !travelAlternative.returnTravel) {
+      return result.comparison?.summary ?? "이동 공평성을 기준으로 비교했습니다.";
+    }
+    const outboundDelta = Math.round((result.recommended.travel!.averageMinutes - travelAlternative.travel!.averageMinutes) * 10) / 10;
+    const returnDelta = Math.round((result.recommended.returnTravel.maximumMinutes - travelAlternative.returnTravel.maximumMinutes) * 10) / 10;
+    const outbound = outboundDelta === 0
+      ? "갈 때 평균시간은 같고"
+      : outboundDelta < 0
+        ? `갈 때 평균은 ${Math.abs(outboundDelta)}분 빠르고`
+        : `갈 때 평균은 ${outboundDelta}분 더 걸리지만`;
+    const returning = returnDelta === 0
+      ? "귀가 최장시간도 같습니다"
+      : returnDelta < 0
+        ? `귀가 최장시간을 ${Math.abs(returnDelta)}분 줄입니다`
+        : `귀가 최장시간은 ${returnDelta}분 늘어납니다`;
+    return `${travelAlternative.parkName}보다 ${outbound} ${returning}.`;
+  };
+
   const view = (candidate: EvaluatedCandidate, role: CandidateRole) => {
     const experience = dataSource.experienceFor(candidate.parkId);
     const averageDelta = Math.round(
       ((candidate.travel?.averageMinutes ?? 0) - result.recommended!.travel!.averageMinutes) * 10,
     ) / 10;
     const selectionReason = role === "recommended"
-      ? "이동시간의 평균·최장·참여자 간 차이를 함께 본 전체 균형 1순위예요."
+      ? meeting.tripMode === "round_trip"
+        ? "갈 때와 귀가의 평균·최장·참여자 간 차이를 각각 계산해 반씩 반영한 1순위예요."
+        : "이동시간의 평균·최장·참여자 간 차이를 함께 본 전체 균형 1순위예요."
       : role === "travel_alternative"
-        ? averageDelta === 0
+        ? meeting.tripMode === "round_trip"
+          ? "갈 때와 귀가를 함께 본 전체 균형 점수가 다음으로 좋은 선택지예요."
+          : averageDelta === 0
           ? "전체 균형 점수가 다음으로 좋고 평균 이동시간은 추천 장소와 같아요."
           : averageDelta < 0
             ? `전체 균형 점수가 다음으로 좋고 평균 이동시간은 ${Math.abs(averageDelta)}분 더 짧아요.`
@@ -54,10 +78,12 @@ export async function buildRecommendationView(
       parkName: candidate.parkName,
       meetingPoint: dataSource.meetingPointFor(candidate.parkId),
       travel: candidate.travel!,
+      returnTravel: candidate.returnTravel,
       participantTimes: candidateById.get(candidate.parkId)?.routes.flatMap((route) => {
         const participant = meeting.participants.find((item) => item.id === route.participantId);
+        const returnRoute = candidateById.get(candidate.parkId)?.returnRoutes?.find((item) => item.participantId === route.participantId);
         return participant && route.minutes !== null
-          ? [{ alias: participant.alias, minutes: route.minutes }]
+          ? [{ alias: participant.alias, minutes: route.minutes, returnMinutes: returnRoute?.minutes ?? null }]
           : [];
       }) ?? [],
       arrivalCrowd: dataSource.arrivalCrowdFor(candidate.parkId, meeting.meetingAt),
@@ -73,6 +99,7 @@ export async function buildRecommendationView(
   };
 
   return {
+    tripMode: meeting.tripMode,
     stage: crowdSource === "fake"
       ? "fake_provisional"
       : stage === "current" ? "live_current" : "live_provisional",
@@ -82,7 +109,7 @@ export async function buildRecommendationView(
       view(experienceAlternative, "experience_alternative"),
     ],
     nearTie: result.nearTie,
-    explanation: result.comparison?.summary ?? "이동 공평성을 기준으로 비교했습니다.",
+    explanation: roundTripExplanation(),
     notice: travelData.source === "kakao_public_transit"
       ? crowdSource === "seoul_realtime_citydata"
         ? "이동시간은 카카오 대중교통 경로 조회값이고 혼잡도는 서울시 실시간 도시데이터입니다. 이동시간은 약속 시각 시간표가 아니며 혼잡은 추정치입니다."
@@ -99,6 +126,7 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
   return {
     id: meeting.id,
     meetingAt: meeting.meetingAt,
+    tripMode: meeting.tripMode,
     participantCount: meeting.participants.length,
     participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
     result,

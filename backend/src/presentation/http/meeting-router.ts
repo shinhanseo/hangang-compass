@@ -2,17 +2,18 @@ import { Router } from "express";
 
 import type { ApplicationServices } from "../../composition-root.js";
 import { capabilityCookieOptions, parseCookies } from "./cookies.js";
-import { isFutureMeetingTime, participantInput, placeQuery } from "./validation.js";
+import { isFutureMeetingTime, participantInput, placeQuery, tripMode } from "./validation.js";
 
 export function createMeetingRouter(services: ApplicationServices) {
   const router = Router();
 
   router.post("/meetings", async (request, response) => {
-    if (!isFutureMeetingTime(request.body?.meetingAt)) {
+    const selectedTripMode = tripMode(request.body?.tripMode);
+    if (!isFutureMeetingTime(request.body?.meetingAt) || !selectedTripMode) {
       response.status(400).json({ error: "invalid_meeting_time" });
       return;
     }
-    const created = await services.createMeeting(request.body.meetingAt);
+    const created = await services.createMeeting(request.body.meetingAt, selectedTripMode);
     response.cookie(`hc_host_${created.meeting.id}`, created.hostToken, capabilityCookieOptions());
     response.cookie(`hc_invite_${created.meeting.id}`, created.inviteToken, capabilityCookieOptions());
     response.status(201).json({

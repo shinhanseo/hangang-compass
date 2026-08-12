@@ -9,6 +9,7 @@ export function getPublicMeeting(
   const meeting = repository.findByInviteTokenHash(tokens.hashCapability(inviteToken));
   return meeting ? {
     meetingAt: meeting.meetingAt,
+    tripMode: meeting.tripMode,
     participantCount: meeting.participants.length,
   } : null;
 }

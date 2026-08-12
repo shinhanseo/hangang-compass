@@ -137,3 +137,42 @@ test("recommendation is deterministic and does not mutate fixture input", () => 
   assert.deepEqual(first, second);
   assert.equal(JSON.stringify(fixture), before);
 });
+
+test("round-trip mode weighs outbound and return fairness equally", () => {
+  const base = structuredClone(RECOMMENDATION_CASES.exactTie.candidates[0]!);
+  const participants = ["p1", "p2"];
+  const fasterOutbound = {
+    ...base,
+    parkId: "faster-outbound",
+    parkName: "갈 때 빠른 공원",
+    routes: participants.map((participantId) => ({ participantId, minutes: 10 })),
+    returnRoutes: participants.map((participantId) => ({ participantId, minutes: 50 })),
+  };
+  const balancedBothWays = {
+    ...base,
+    parkId: "balanced-both",
+    parkName: "왕복 균형 공원",
+    routes: participants.map((participantId) => ({ participantId, minutes: 25 })),
+    returnRoutes: participants.map((participantId) => ({ participantId, minutes: 25 })),
+  };
+
+  const outbound = recommend({ stage: "provisional", participantIds: participants, candidates: [fasterOutbound, balancedBothWays] }, FAIRNESS_POLICIES.balanced);
+  const roundTrip = recommend({ stage: "provisional", tripMode: "round_trip", participantIds: participants, candidates: [fasterOutbound, balancedBothWays] }, FAIRNESS_POLICIES.balanced);
+
+  assert.equal(outbound.recommended?.parkId, "faster-outbound");
+  assert.equal(roundTrip.recommended?.parkId, "balanced-both");
+  assert.equal(roundTrip.recommended?.penalties.travel, 20);
+  assert.deepEqual(roundTrip.recommended?.returnTravel, { averageMinutes: 25, maximumMinutes: 25, rangeMinutes: 0 });
+});
+
+test("round-trip mode excludes a park when any return route is missing", () => {
+  const input = structuredClone(RECOMMENDATION_CASES.exactTie);
+  input.candidates[0]!.returnRoutes = input.candidates[0]!.routes.map((route, index) => ({
+    ...route,
+    minutes: index === 0 ? null : route.minutes,
+  }));
+  for (const candidate of input.candidates.slice(1)) candidate.returnRoutes = structuredClone(candidate.routes);
+
+  const result = recommend({ ...input, tripMode: "round_trip" }, FAIRNESS_POLICIES.balanced);
+  assert.ok(result.excluded[0]?.exclusionReasons.includes("participant_return_route_missing"));
+});

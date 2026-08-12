@@ -44,7 +44,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   return (
     <main className="shell">
       <section className="topbar">
-        <div><p className="eyebrow">HOST</p><h1>한강 피크닉 약속</h1><p>{formatMeetingAt(data.meeting.meetingAt)}</p></div>
+        <div><p className="eyebrow">HOST · {data.meeting.tripMode === "round_trip" ? "ROUND TRIP" : "ONE WAY"}</p><h1>한강 피크닉 약속</h1><p>{formatMeetingAt(data.meeting.meetingAt)} · {data.meeting.tripMode === "round_trip" ? "왕복까지 비교" : "갈 때만 비교"}</p></div>
         <button className="secondary" onClick={() => void refresh()}>새로고침</button>
       </section>
       <section className="panel share-panel">

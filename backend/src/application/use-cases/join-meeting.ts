@@ -9,6 +9,8 @@ export interface JoinMeetingInput {
   alias: string;
   originPlaceId: string;
   originPlaceName: string;
+  destinationPlaceId?: string;
+  destinationPlaceName?: string;
 }
 
 export async function joinMeeting(
@@ -24,10 +26,15 @@ export async function joinMeeting(
   }
   const origin = await origins.resolve({ id: input.originPlaceId, name: input.originPlaceName });
   if (!origin) return null;
+  const destination = meeting.tripMode === "round_trip"
+    ? await origins.resolve({ id: input.destinationPlaceId ?? "", name: input.destinationPlaceName ?? "" })
+    : null;
+  if (meeting.tripMode === "round_trip" && !destination) return null;
   meeting.participants.push({
     id: tokens.generateId(),
     alias: input.alias,
     origin: { placeId: origin.id, placeName: origin.name },
+    destination: destination ? { placeId: destination.id, placeName: destination.name } : null,
   });
   repository.save(meeting);
   const result = await buildRecommendationView(meeting, recommendations);
