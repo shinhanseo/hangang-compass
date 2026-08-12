@@ -81,6 +81,8 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.match(created.invitePath, /^\/join\/[A-Za-z0-9_-]{43}$/u);
 
   const inviteToken = created.invitePath.split("/").at(-1);
+  const anonymousSession = await fetch(`${baseUrl}/api/invites/${inviteToken}/participant-session`);
+  assert.deepEqual(await anonymousSession.json(), { session: { submitted: false } });
   const participantCookies: string[] = [];
   for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     const joinResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
@@ -94,6 +96,24 @@ test("create, invite, join twice, and recommend without exposing origins", async
     assert.ok(participantCookie);
     participantCookies.push(participantCookie);
   }
+
+  const restoredSessionResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/participant-session`, {
+    headers: { cookie: participantCookies[0]! },
+  });
+  assert.equal(restoredSessionResponse.status, 200);
+  const restoredSession = (await restoredSessionResponse.json()).session;
+  assert.equal(restoredSession.submitted, true);
+  assert.equal(restoredSession.participantCount, 2);
+  assert.ok(restoredSession.result?.recommended.parkId);
+  assert.equal(JSON.stringify(restoredSession).includes("hongdae"), false);
+
+  const duplicateSubmission = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
+    method: "POST",
+    headers: { cookie: participantCookies[0]!, "content-type": "application/json" },
+    body: JSON.stringify({ alias: "중복", originPlaceId: "gangnam", originPlaceName: "강남역", travelMode: "car" }),
+  });
+  assert.equal(duplicateSubmission.status, 200);
+  assert.equal((await duplicateSubmission.json()).participantCount, 2);
 
   const hostResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
     headers: { cookie: hostCookie.split(";")[0]! },

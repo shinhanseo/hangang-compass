@@ -4,6 +4,7 @@ import { getHostMeeting } from "./application/use-cases/get-host-meeting.js";
 import { getPublicMeeting } from "./application/use-cases/get-public-meeting.js";
 import { getPublicRecommendation } from "./application/use-cases/get-public-recommendation.js";
 import { joinMeeting } from "./application/use-cases/join-meeting.js";
+import { getParticipantSession } from "./application/use-cases/get-participant-session.js";
 import { FakeRecommendationDataSource } from "./infrastructure/providers/fake/fake-recommendation-data-source.js";
 import type { CrowdDataProvider } from "./application/ports/crowd-data-provider.js";
 import type { TransitRouteProvider } from "./application/ports/transit-route-provider.js";
@@ -52,6 +53,8 @@ export function createApplicationServices(options: {
     createMeeting: (meetingAt: string, travelPattern: TravelPattern) => createMeeting({ repository, tokens, recommendations }, meetingAt, travelPattern),
     publicMeeting: (inviteToken: string) => getPublicMeeting(repository, tokens, inviteToken),
     publicRecommendation: (inviteToken: string) => getPublicRecommendation(repository, tokens, recommendations, inviteToken),
+    participantSession: (inviteToken: string, participantToken: string | undefined) =>
+      getParticipantSession(repository, tokens, recommendations, inviteToken, participantToken),
     joinMeeting: (input: { inviteToken: string; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string; travelMode: TravelMode }) =>
       joinMeeting(repository, tokens, recommendations, origins, input),
     hostMeeting: (meetingId: string, hostToken: string | undefined) =>

@@ -58,7 +58,29 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json({ result });
   });
 
+  router.get("/invites/:inviteToken/participant-session", async (request, response) => {
+    const session = await services.participantSession(
+      request.params.inviteToken,
+      parseCookies(request.headers.cookie).hc_participant,
+    );
+    if (!session) {
+      response.status(404).json({ error: "invite_not_found" });
+      return;
+    }
+    response.json({ session });
+  });
+
   router.post("/invites/:inviteToken/participants", async (request, response) => {
+    const participantToken = parseCookies(request.headers.cookie).hc_participant;
+    const existingSession = await services.participantSession(request.params.inviteToken, participantToken);
+    if (!existingSession) {
+      response.status(404).json({ error: "invite_not_found" });
+      return;
+    }
+    if (existingSession.submitted) {
+      response.status(200).json(existingSession);
+      return;
+    }
     const input = participantInput(request.body);
     if (!input) {
       response.status(400).json({ error: "invalid_alias" });

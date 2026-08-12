@@ -89,3 +89,12 @@ export interface HostMeeting {
   poll: MeetingPoll | null;
 }
 export type TravelMode = "public_transit" | "car";
+
+export type ParticipantSession =
+  | { submitted: false }
+  | {
+      submitted: true;
+      participantCount: number;
+      result: RecommendationResult | null;
+      recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+    };

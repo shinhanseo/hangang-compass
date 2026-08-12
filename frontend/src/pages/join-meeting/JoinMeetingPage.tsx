@@ -4,7 +4,7 @@ import { RecommendationResult } from "../../features/recommendation/Recommendati
 import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
 import { TravelModeSelector } from "../../features/travel-mode/TravelModeSelector";
-import type { MeetingPoll, OriginPlace, RecommendationResult as Recommendation, TravelMode } from "../../shared/api/contracts";
+import type { MeetingPoll, OriginPlace, ParticipantSession, RecommendationResult as Recommendation, TravelMode } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
@@ -21,6 +21,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [count, setCount] = useState(0);
   const [error, setError] = useState("");
   const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [recommendationUpdate, setRecommendationUpdate] = useState("");
   const [publicResult, setPublicResult] = useState<Recommendation | null>(null);
   const [viewingPublicResult, setViewingPublicResult] = useState(false);
@@ -30,9 +31,17 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [pollError, setPollError] = useState("");
 
   useEffect(() => {
-    api<{ meeting: { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } }>(`/api/invites/${inviteToken}`).then((invite) => {
+    api<{ meeting: { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } }>(`/api/invites/${inviteToken}`).then(async (invite) => {
       setMeeting(invite.meeting);
       setCount(invite.meeting.participantCount);
+      const restored = await api<{ session: ParticipantSession }>(`/api/invites/${inviteToken}/participant-session`).catch(() => null);
+      if (restored?.session.submitted) {
+        setSubmitted(true);
+        setCount(restored.session.participantCount);
+        setResult(restored.session.result);
+        setRecommendationUnavailable(restored.session.recommendationStatus === "route_unavailable");
+        return;
+      }
       if (invite.meeting.participantCount >= 2) {
         void api<{ result: Recommendation }>(`/api/invites/${inviteToken}/recommendation`)
           .then((response) => {
@@ -89,6 +98,18 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
     return () => window.clearInterval(timer);
   }, [inviteToken, Boolean(publicResult), Boolean(result)]);
 
+  useEffect(() => {
+    if (!submitted || result || recommendationUnavailable) return;
+    const refreshSession = () => void api<{ session: ParticipantSession }>(`/api/invites/${inviteToken}/participant-session`).then(({ session }) => {
+      if (!session.submitted) return;
+      setCount(session.participantCount);
+      setResult(session.result);
+      setRecommendationUnavailable(session.recommendationStatus === "route_unavailable");
+    }).catch(() => undefined);
+    const timer = window.setInterval(refreshSession, 4_000);
+    return () => window.clearInterval(timer);
+  }, [inviteToken, submitted, Boolean(result), recommendationUnavailable]);
+
   function selectOrigin(place: OriginPlace | null) {
     setOrigin(place);
   }
@@ -115,6 +136,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
         }),
       });
       setCount(joined.participantCount);
+      setSubmitted(true);
       setResult(joined.result);
       setViewingPublicResult(false);
       setRecommendationUnavailable(joined.recommendationStatus === "route_unavailable");
@@ -152,6 +174,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
     </> : undefined} />
   </main>;
   if (recommendationUnavailable) return <main className="shell app-screen"><MobileAppBar /><section className="state-card"><span className="state-icon">!</span><h1>경로를 확인하지 못했어요</h1><p>일부 참여자의 이동 경로가 없어 지금은 추천을 만들 수 없습니다. 잠시 후 방장 화면에서 다시 확인해 주세요.</p></section></main>;
+  if (submitted) return <main className="shell app-screen"><MobileAppBar /><section className="state-card participant-waiting-state"><span className="state-icon">✓</span><p className="state-kicker">장소 입력 완료</p><h1>친구의 응답을<br />기다리고 있어요</h1><p>현재 {count}명이 참여했어요. 추천이 준비되면 이 화면에서 바로 보여드릴게요.</p><div className="waiting-dots" aria-hidden="true"><i /><i /><i /></div></section></main>;
 
   const sharedOrigin = meeting.travelPattern === "shared_origin";
   return <main className="shell app-screen join-screen">
