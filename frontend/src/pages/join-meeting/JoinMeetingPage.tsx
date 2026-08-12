@@ -115,8 +115,17 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const sharedOrigin = meeting.travelPattern === "shared_origin";
   return <main className="shell app-screen join-screen">
     <MobileAppBar />
-    <section className="invite-hero"><div className="invite-label"><span className="status-dot" />친구가 초대했어요</div><h1>한강 피크닉</h1><div className="invite-date"><strong>{formatMeetingAt(meeting.meetingAt)}</strong><span><AppIcon name="people" size={17} />현재 {count}명 · 최대 8명</span></div><div className="invite-river" aria-hidden="true"><i /><i /><i /></div></section>
-    {publicResult && <button className="public-result-trigger" type="button" onClick={() => { setResult(publicResult); setViewingPublicResult(true); }}><span><AppIcon name="spark" /></span><span><small>친구들이 만든 현재 결과</small><strong>추천 먼저 보기</strong></span><AppIcon name="chevron" /></button>}
+    <section className="invite-hero">
+      <div className="invite-label"><span className="status-dot" />초대받은 약속</div>
+      <div className="invite-copy"><p>우리에게 좋은 한강을 함께 골라요</p><h1>한강 피크닉</h1></div>
+      <div className="invite-summary">
+        <span className="invite-summary-icon"><AppIcon name="calendar" size={18} /></span>
+        <span className="invite-summary-time"><small>약속 시간</small><strong>{formatMeetingAt(meeting.meetingAt)}</strong></span>
+        <span className="invite-summary-count"><AppIcon name="people" size={16} /><strong>현재 {count}명</strong><small>최대 8명</small></span>
+      </div>
+      <div className="invite-river" aria-hidden="true"><i /><i /><i /></div>
+    </section>
+    {publicResult && <button className="public-result-trigger" type="button" onClick={() => { setResult(publicResult); setViewingPublicResult(true); }}><span><AppIcon name="spark" /></span><span><small>친구들이 먼저 입력했어요</small><strong>현재 추천 결과 보기</strong></span><AppIcon name="chevron" /></button>}
     <form className="app-form join-form" onSubmit={submit}>
       <section className="form-section">
         <div className="section-title"><span>1</span><div><h2>누구인지 알려주세요</h2><p>친구들이 알아볼 이름이면 충분해요.</p></div></div>
