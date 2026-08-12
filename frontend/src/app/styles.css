@@ -312,6 +312,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .result-card.primary .crowd-status small, .result-card.primary .meeting-point { color: var(--muted); }
 .result-card.primary .selection-reason { color: var(--forest); background: rgb(255 255 255 / 64%); }
 .result-card.primary .result-details { border-color: rgb(99 107 47 / 18%); }
+.result-card.primary .travel-metrics h3, .result-card.primary .metrics dt { color: var(--muted); }
 .park-title h2 { font-size: 24px; }
 .selection-reason { margin: 15px 0; padding: 12px 13px; border-radius: 14px; font-size: 11px; line-height: 1.5; }
 .key-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
