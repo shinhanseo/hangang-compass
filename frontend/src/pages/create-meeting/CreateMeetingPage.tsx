@@ -101,7 +101,7 @@ export function CreateMeetingPage() {
         </section>
         {error && <p className="error">{error}</p>}
         <p className="privacy-line"><AppIcon name="lock" size={16} />회원가입과 정확한 집 주소 없이 만들 수 있어요.</p>
-        <div className="bottom-action"><button className="primary-action" disabled={busy}>{busy ? "약속을 만드는 중…" : "한강 약속 만들기"}<AppIcon name="chevron" /></button></div>
+        <div className="bottom-action"><button className="primary-action create-submit" disabled={busy}>{busy ? "약속을 만드는 중…" : "한강 약속 만들기"}<AppIcon name="chevron" /></button></div>
       </form>
       {dateTimeSheetOpen && <DateTimeSheet value={meetingAt} onClose={closeDateTimeSheet} onConfirm={setMeetingAt} />}
       {patternSheetOpen && <div className="sheet-layer">
