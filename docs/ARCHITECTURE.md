@@ -117,7 +117,7 @@
 
 단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
 
-실행 서버는 Node 내장 SQLite 저장소를 사용하며 기본 파일은 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. SQLite 파일에는 공개 장소 공급자 참조와 해시된 권한만 저장하고 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 파일 기반 저장소이므로 운영 배포 대상은 영구 볼륨이 필요하며, 영구 디스크가 없는 서버리스 배포에서는 같은 repository 포트의 PostgreSQL 구현으로 교체해야 한다.
+실행 서버는 Node 22.13 이상에서 플래그 없이 제공되는 내장 SQLite 저장소를 사용하며 기본 파일은 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. SQLite 파일에는 공개 장소 공급자 참조와 해시된 권한만 저장하고 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 파일 기반 저장소이므로 운영 배포 대상은 영구 볼륨이 필요하며, 영구 디스크가 없는 서버리스 배포에서는 같은 repository 포트의 PostgreSQL 구현으로 교체해야 한다.
 
 같은 브라우저는 `localStorage`에 최근 약속의 ID와 시각만 최대 5개 저장하고 HttpOnly 방장 쿠키로 실제 권한을 검증한다. 다른 기기 복구 링크는 256비트 방장·초대 capability를 URL fragment에 담는다. 복구 화면이 fragment를 읽어 서버에서 해시를 검증하고 쿠키를 발급한 뒤 즉시 URL을 정리한다. 방장 화면은 필요할 때만 새 복구 링크를 만들며 활성 capability 수를 제한한다.
 
