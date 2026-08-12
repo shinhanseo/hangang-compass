@@ -27,6 +27,14 @@ input, select { width: 100%; min-height: 50px; padding: 0 14px; border: 1px soli
 input:focus, select:focus { outline: 3px solid rgb(8 127 91 / 18%); border-color: #087f5b; }
 .note, .prototype-notice { margin: 2px 0 0; color: #718079; font-size: 13px; line-height: 1.5; }
 .error { margin: 0; color: #b42318; font-size: 14px; }
+.place-status:empty { display: none; }
+.selected-place { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 12px 14px; border-radius: 11px; color: #17634e; background: #e8f3ee; }
+.selected-place span { color: #5f7068; font-size: 12px; }
+.place-results { display: grid; gap: 7px; max-height: 330px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.place-results button { display: grid; width: 100%; height: auto; min-height: 68px; padding: 12px 14px; border: 1px solid #d8e1dd; color: #14241f; background: white; text-align: left; }
+.place-results button:hover, .place-results button:focus-visible { border-color: #087f5b; background: #f5faf7; }
+.place-results span, .place-results small { margin-top: 3px; color: #66776f; font-size: 12px; font-weight: 500; }
+.place-results small { color: #087f5b; }
 .topbar { display: flex; max-width: 980px; margin: 0 auto 24px; gap: 18px; align-items: flex-start; justify-content: space-between; }
 .topbar h1 { font-size: clamp(30px, 6vw, 48px); }
 .topbar > div > p:last-child { color: #63726c; }

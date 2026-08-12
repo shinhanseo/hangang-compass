@@ -8,6 +8,17 @@ export function participantInput(body: unknown) {
   if (!body || typeof body !== "object") return null;
   const candidate = body as Record<string, unknown>;
   const alias = typeof candidate.alias === "string" ? candidate.alias.trim() : "";
-  const stationId = typeof candidate.stationId === "string" ? candidate.stationId : "";
-  return alias.length >= 1 && alias.length <= 20 ? { alias, stationId } : null;
+  const originPlaceId = typeof candidate.originPlaceId === "string" ? candidate.originPlaceId.trim() : "";
+  const originPlaceName = typeof candidate.originPlaceName === "string" ? candidate.originPlaceName.trim() : "";
+  return alias.length >= 1 && alias.length <= 20
+    && originPlaceId.length >= 1 && originPlaceId.length <= 80
+    && originPlaceName.length >= 1 && originPlaceName.length <= 100
+    ? { alias, originPlaceId, originPlaceName }
+    : null;
+}
+
+export function placeQuery(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const query = value.trim().replace(/\s+/gu, " ");
+  return query.length >= 2 && query.length <= 50 ? query : null;
 }

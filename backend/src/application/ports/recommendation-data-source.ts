@@ -4,14 +4,7 @@ import type { CandidateInput } from "../../domain/recommendation/recommendation.
 import type { CrowdLevel, CrowdUnavailableReason } from "../../domain/crowd/crowd-snapshot.js";
 import type { RecommendationStage } from "../../domain/recommendation/recommendation.js";
 
-export interface StationView {
-  id: string;
-  name: string;
-}
-
 export interface RecommendationDataSource {
-  stations(): readonly StationView[];
-  hasStation(stationId: string): boolean;
   prepareFor(participants: Participant[], meetingAt: string): Promise<void>;
   stageFor(meetingAt: string): RecommendationStage;
   candidates(participants: Participant[], meetingAt: string): CandidateInput[];

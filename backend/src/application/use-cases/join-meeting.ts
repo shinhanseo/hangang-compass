@@ -2,27 +2,32 @@ import { buildRecommendationView } from "../services/build-recommendation-view.j
 import type { CapabilityTokenService } from "../ports/capability-token-service.js";
 import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
+import type { OriginPlaceProvider } from "../ports/origin-place-provider.js";
 
 export interface JoinMeetingInput {
   inviteToken: string;
   alias: string;
-  stationId: string;
+  originPlaceId: string;
+  originPlaceName: string;
 }
 
 export async function joinMeeting(
   repository: MeetingRepository,
   tokens: CapabilityTokenService,
   recommendations: RecommendationDataSource,
+  origins: OriginPlaceProvider,
   input: JoinMeetingInput,
 ) {
   const meeting = repository.findByInviteTokenHash(tokens.hashCapability(input.inviteToken));
-  if (!meeting || !recommendations.hasStation(input.stationId) || meeting.participants.length >= 8) {
+  if (!meeting || meeting.participants.length >= 8) {
     return null;
   }
+  const origin = await origins.resolve({ id: input.originPlaceId, name: input.originPlaceName });
+  if (!origin) return null;
   meeting.participants.push({
     id: tokens.generateId(),
     alias: input.alias,
-    stationId: input.stationId,
+    origin: { placeId: origin.id, placeName: origin.name },
   });
   repository.save(meeting);
   const result = await buildRecommendationView(meeting, recommendations);

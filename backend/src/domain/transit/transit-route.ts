@@ -3,6 +3,7 @@ export interface TransitEndpoint {
   name: string;
   query: string;
   officialAddress?: string;
+  coordinate?: { x: string; y: string };
 }
 
 export interface TransitRouteEstimate {

@@ -3,7 +3,6 @@ import type { Participant } from "../../../domain/meeting/meeting.js";
 import type { CandidateInput } from "../../../domain/recommendation/recommendation.js";
 import { parkExperienceFor } from "../../catalog/park-experience-catalog.js";
 import { MEETING_POINT_CATALOG } from "../../catalog/meeting-point-catalog.js";
-import { STATION_CATALOG } from "../../catalog/station-catalog.js";
 
 const TIMES: Record<string, Record<string, number>> = {
   hongdae: { gangseo: 48, gwangnaru: 58, nanji: 40, ttukseom: 40, mangwon: 24, banpo: 38, yanghwa: 27, yeouido: 22, ichon: 31, jamsil: 48, jamwon: 42 },
@@ -28,10 +27,6 @@ const FAKE_ARRIVAL_CROWD = {
   jamwon: ["normal", "보통"] as const,
 };
 
-function stationExists(stationId: string): boolean {
-  return STATION_CATALOG.some((station) => station.id === stationId);
-}
-
 function fakeCandidates(
   participants: Participant[],
 ): CandidateInput[] {
@@ -40,7 +35,7 @@ function fakeCandidates(
     parkName,
     routes: participants.map((participant) => ({
       participantId: participant.id,
-      minutes: TIMES[participant.stationId]?.[parkId] ?? null,
+      minutes: TIMES[participant.origin.placeId]?.[parkId] ?? null,
     })),
     meetingPointStatus: "provisional",
     facilities: { restroom: true },
@@ -58,14 +53,6 @@ function meetingPointFor(parkId: string): string {
 }
 
 export class FakeRecommendationDataSource implements RecommendationDataSource {
-  stations() {
-    return STATION_CATALOG;
-  }
-
-  hasStation(stationId: string): boolean {
-    return stationExists(stationId);
-  }
-
   async prepareFor(_participants: Participant[], _meetingAt: string): Promise<void> {}
 
   stageFor() {

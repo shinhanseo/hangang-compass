@@ -2,14 +2,10 @@ import { Router } from "express";
 
 import type { ApplicationServices } from "../../composition-root.js";
 import { capabilityCookieOptions, parseCookies } from "./cookies.js";
-import { isFutureMeetingTime, participantInput } from "./validation.js";
+import { isFutureMeetingTime, participantInput, placeQuery } from "./validation.js";
 
 export function createMeetingRouter(services: ApplicationServices) {
   const router = Router();
-
-  router.get("/stations", (_request, response) => {
-    response.json({ stations: services.stations() });
-  });
 
   router.post("/meetings", async (request, response) => {
     if (!isFutureMeetingTime(request.body?.meetingAt)) {
@@ -32,6 +28,24 @@ export function createMeetingRouter(services: ApplicationServices) {
       return;
     }
     response.json({ meeting });
+  });
+
+  router.get("/invites/:inviteToken/places", async (request, response) => {
+    if (!services.publicMeeting(request.params.inviteToken)) {
+      response.status(404).json({ error: "invite_not_found" });
+      return;
+    }
+    const query = placeQuery(request.query.query);
+    if (!query) {
+      response.status(400).json({ error: "invalid_place_query" });
+      return;
+    }
+    const result = await services.searchOriginPlaces(query);
+    if (result.status === "unavailable") {
+      response.status(503).json({ error: "place_search_unavailable" });
+      return;
+    }
+    response.json({ places: result.places });
   });
 
   router.post("/invites/:inviteToken/participants", async (request, response) => {

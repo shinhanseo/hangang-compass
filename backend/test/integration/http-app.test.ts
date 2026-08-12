@@ -37,6 +37,29 @@ test("unknown routes return a generic response without reflecting the URL", asyn
   assert.deepEqual(await response.json(), { error: "not_found" });
 });
 
+test("searches selectable public places only through a valid invite", async (context) => {
+  const server = createApp().listen(0, "127.0.0.1");
+  context.after(() => server.close());
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const created = await (await fetch(`${baseUrl}/api/meetings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 60_000).toISOString() }),
+  })).json();
+  const inviteToken = created.invitePath.split("/").at(-1);
+
+  const response = await fetch(`${baseUrl}/api/invites/${inviteToken}/places?query=${encodeURIComponent("홍대")}`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    places: [{ id: "hongdae", name: "홍대입구역", address: "검증용 출발역", category: "지하철역" }],
+  });
+  assert.equal((await fetch(`${baseUrl}/api/invites/invalid/places?query=${encodeURIComponent("홍대")}`)).status, 404);
+  assert.equal((await fetch(`${baseUrl}/api/invites/${inviteToken}/places?query=${encodeURIComponent("홍")}`)).status, 400);
+});
+
 test("create, invite, join twice, and recommend without exposing origins", async (context) => {
   const server = createApp().listen(0, "127.0.0.1");
   context.after(() => server.close());
@@ -58,11 +81,11 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.match(created.invitePath, /^\/join\/[A-Za-z0-9_-]{43}$/u);
 
   const inviteToken = created.invitePath.split("/").at(-1);
-  for (const [alias, stationId] of [["민지", "hongdae"], ["준호", "gangnam"]]) {
+  for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     const joinResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ alias, stationId }),
+      body: JSON.stringify({ alias, originPlaceId, originPlaceName }),
     });
     assert.equal(joinResponse.status, 201);
   }
@@ -85,7 +108,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   ]).size, 3);
   assert.equal(hostView.meeting.result.recommended.arrivalCrowd.status, "fake_sample");
   assert.match(hostView.meeting.result.recommended.experience.sourceUrl, /^https:\/\/hangang\.seoul\.go\.kr\//u);
-  assert.equal(JSON.stringify(hostView).includes("stationId"), false);
+  assert.equal(JSON.stringify(hostView).includes("origin"), false);
   assert.equal(JSON.stringify(hostView).includes("hongdae"), false);
 
   const selectedParkId = hostView.meeting.result.alternatives[1].parkId;
@@ -168,11 +191,11 @@ test("live crowd and transit routes are cached and exposed through HTTP", async 
   const hostCookie = createdResponse.headers.get("set-cookie")!;
   const created = await createdResponse.json();
   const inviteToken = created.invitePath.split("/").at(-1);
-  for (const [alias, stationId] of [["민지", "hongdae"], ["준호", "gangnam"]]) {
+  for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ alias, stationId }),
+      body: JSON.stringify({ alias, originPlaceId, originPlaceName }),
     });
   }
   const hostResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
@@ -207,11 +230,11 @@ test("route outage returns an explicit unavailable state instead of fake minutes
   })).json();
   const inviteToken = created.invitePath.split("/").at(-1);
   let secondJoin: Response | null = null;
-  for (const [alias, stationId] of [["민지", "hongdae"], ["준호", "gangnam"]]) {
+  for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     secondJoin = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ alias, stationId }),
+      body: JSON.stringify({ alias, originPlaceId, originPlaceName }),
     });
   }
   const body = await secondJoin!.json();

@@ -5,6 +5,7 @@ import { createApplicationServices } from "./composition-root.js";
 import { CachedCrowdDataProvider } from "./infrastructure/providers/cached-crowd-data-provider.js";
 import { CachedTransitRouteProvider } from "./infrastructure/providers/cached-transit-route-provider.js";
 import { KakaoTransitRouteProvider } from "./infrastructure/providers/kakao/kakao-transit-route-provider.js";
+import { KakaoOriginPlaceProvider } from "./infrastructure/providers/kakao/kakao-origin-place-provider.js";
 import { SeoulCitydataCrowdProvider } from "./infrastructure/providers/seoul/seoul-citydata-crowd-provider.js";
 import { createApp } from "./presentation/http/app.js";
 
@@ -25,7 +26,10 @@ const routeProvider = kakaoApiKey
       maxRequestsPerDay: 900,
     })
   : undefined;
-const app = createApp(createApplicationServices({ crowdProvider, routeProvider }));
+const originPlaceProvider = kakaoApiKey
+  ? new KakaoOriginPlaceProvider({ apiKey: kakaoApiKey })
+  : undefined;
+const app = createApp(createApplicationServices({ crowdProvider, routeProvider, originPlaceProvider }));
 
 app.listen(port, "127.0.0.1", () => {
   console.log(JSON.stringify({ event: "api_started", port }));

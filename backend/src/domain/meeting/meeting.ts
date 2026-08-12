@@ -1,7 +1,10 @@
 export interface Participant {
   id: string;
   alias: string;
-  stationId: string;
+  origin: {
+    placeId: string;
+    placeName: string;
+  };
 }
 
 export interface Meeting {

@@ -23,8 +23,6 @@ export class LiveCrowdRecommendationDataSource implements RecommendationDataSour
     this.#now = now;
   }
 
-  stations() { return this.#base.stations(); }
-  hasStation(stationId: string) { return this.#base.hasStation(stationId); }
   meetingPointFor(parkId: string) { return this.#base.meetingPointFor(parkId); }
   experienceFor(parkId: string) { return this.#base.experienceFor(parkId); }
   travelData(participants: Participant[]) { return this.#base.travelData(participants); }

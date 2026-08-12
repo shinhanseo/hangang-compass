@@ -6,7 +6,3 @@ export const STATION_CATALOG = [
   { id: "sadang", name: "사당역", query: "사당역" },
   { id: "yeongdeungpo", name: "영등포역", query: "영등포역" },
 ] as const;
-
-export function stationById(stationId: string) {
-  return STATION_CATALOG.find((station) => station.id === stationId) ?? null;
-}

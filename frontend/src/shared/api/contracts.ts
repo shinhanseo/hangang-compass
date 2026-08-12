@@ -1,6 +1,8 @@
-export interface Station {
+export interface OriginPlace {
   id: string;
   name: string;
+  address: string;
+  category: string;
 }
 
 export interface ParkResult {

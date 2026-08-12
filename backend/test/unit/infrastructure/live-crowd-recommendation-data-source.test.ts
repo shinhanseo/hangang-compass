@@ -42,8 +42,8 @@ test("prepares all parks and injects arrival forecast into candidate conditions"
   assert.equal(calls, 11);
   assert.equal(source.stageFor(meetingAt), "current");
   const candidates = source.candidates([
-    { id: "p1", alias: "민지", stationId: "hongdae" },
-    { id: "p2", alias: "준호", stationId: "gangnam" },
+    { id: "p1", alias: "민지", origin: { placeId: "hongdae", placeName: "홍대입구역" } },
+    { id: "p2", alias: "준호", origin: { placeId: "gangnam", placeName: "강남역" } },
   ], meetingAt);
   assert.deepEqual(candidates.find((candidate) => candidate.parkId === "banpo")?.conditions.crowd, {
     value: "very_busy",

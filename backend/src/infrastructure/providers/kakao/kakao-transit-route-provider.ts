@@ -107,6 +107,7 @@ export class KakaoTransitRouteProvider implements TransitRouteProvider {
   }
 
   async #resolve(endpoint: TransitEndpoint, destination: boolean): Promise<Coordinate | null> {
+    if (endpoint.coordinate) return endpoint.coordinate;
     const key = `${destination ? "destination" : "origin"}:${endpoint.id}`;
     if (this.#coordinates.has(key)) return this.#coordinates.get(key) ?? null;
     const url = new URL("https://dapi.kakao.com/v2/local/search/keyword.json");
