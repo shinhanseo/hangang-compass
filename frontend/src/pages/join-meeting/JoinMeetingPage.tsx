@@ -21,6 +21,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [recommendationUpdate, setRecommendationUpdate] = useState("");
   const [publicResult, setPublicResult] = useState<Recommendation | null>(null);
   const [viewingPublicResult, setViewingPublicResult] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     api<{ meeting: { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } }>(`/api/invites/${inviteToken}`).then((invite) => {
@@ -74,7 +75,9 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (isSubmitting) return;
     setError("");
+    setIsSubmitting(true);
     try {
       const joined = await api<{
         participantCount: number;
@@ -96,6 +99,8 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       setRecommendationUnavailable(joined.recommendationStatus === "route_unavailable");
     } catch {
       setError(meeting?.travelPattern === "shared_origin" ? "별칭과 귀가 장소를 다시 확인해 주세요." : "별칭과 출발·귀가 장소를 다시 확인해 주세요.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -133,7 +138,16 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       </section>
       {error && <p className="error">{error}</p>}
       <p className="privacy-card"><span><AppIcon name="lock" size={18} /></span><span><strong>내 이동 장소는 나만 알아요</strong><small>방장과 다른 친구에게 공개되지 않습니다.</small></span></p>
-      <div className="bottom-action"><button className="primary-action" disabled={sharedOrigin ? !meeting.sharedOriginName || !destination : !origin}>이동 장소 제출하기<AppIcon name="chevron" /></button></div>
+      <div className={`bottom-action join-submit-action${isSubmitting ? " submitting" : ""}`}>
+        {isSubmitting && <p className="submit-progress" role="status">11개 공원의 이동시간과 혼잡도를 비교하고 있어요.</p>}
+        <button
+          className="primary-action join-submit"
+          disabled={isSubmitting || !alias.trim() || (sharedOrigin ? !meeting.sharedOriginName || !destination : !origin)}
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? <><span className="button-spinner" aria-hidden="true" />추천 공원 계산 중…</> : <>이동 장소 제출하기<AppIcon name="chevron" /></>}
+        </button>
+      </div>
     </form>
   </main>;
 }
