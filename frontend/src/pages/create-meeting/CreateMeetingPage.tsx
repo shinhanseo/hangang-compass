@@ -69,14 +69,11 @@ export function CreateMeetingPage() {
     <main className="shell app-screen create-screen">
       <MobileAppBar />
       <section className="create-hero">
-        <p className="overline">FAIR PICNIC PLANNER</p>
+        <p className="create-eyebrow">한강 약속 장소 추천</p>
         <h1>모두에게 좋은<br /><em>한강을 찾아봐요.</em></h1>
-        <p>출발하는 곳이 달라도 괜찮아요.<br />이동 시간과 혼잡도를 함께 비교해 드려요.</p>
-        <div className="meeting-path" aria-hidden="true">
-          <span className="path-line path-one" /><span className="path-line path-two" /><span className="path-line path-three" />
-          <i className="path-origin origin-one" /><i className="path-origin origin-two" /><i className="path-origin origin-three" />
-          <span className="path-destination"><AppIcon name="map" size={18} /><strong>11개의 한강공원</strong></span>
-        </div>
+        <p className="create-description">출발하는 곳이 달라도 괜찮아요.<br />이동 시간과 혼잡도를 함께 비교해 드려요.</p>
+        <p className="park-count"><strong>11개</strong> 한강공원을 한 번에 비교해요</p>
+        <div className="hero-river-lines" aria-hidden="true"><i /><i /><i /></div>
       </section>
       {recentMeetings.length > 0 && <section className="recent-meetings" aria-labelledby="recent-meetings-title">
         <div><p>이 기기에서 만든 약속</p><h2 id="recent-meetings-title">진행 중인 약속 이어보기</h2></div>

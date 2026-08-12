@@ -116,7 +116,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   return <main className="shell app-screen join-screen">
     <MobileAppBar />
     <section className="invite-hero">
-      <div className="invite-label"><span className="status-dot" />초대받은 약속</div>
+      <p className="invite-eyebrow">한강 피크닉 초대</p>
       <div className="invite-copy"><p>우리에게 좋은 한강을 함께 골라요</p><h1>한강 피크닉</h1></div>
       <div className="invite-summary">
         <span className="invite-summary-icon"><AppIcon name="calendar" size={18} /></span>
