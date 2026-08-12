@@ -51,6 +51,9 @@ input:focus, select:focus { outline: 3px solid rgb(8 127 91 / 18%); border-color
 .share-panel input { font-size: 13px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .submitted { margin: 4px 0 0; color: #53645d; font-size: 14px; }
+.shared-origin-banner, .shared-origin-summary { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; border-radius: 13px; color: #17634e; background: #e8f3ee; }
+.shared-origin-banner { max-width: 980px; margin: 0 auto 18px; }
+.shared-origin-banner span, .shared-origin-summary span { color: #5f7068; font-size: 12px; font-weight: 700; }
 .waiting { max-width: 980px; margin: 0 auto; padding: 36px 24px; text-align: center; }
 .waiting p { color: #687770; line-height: 1.6; }
 .result { max-width: 980px; margin: 0 auto; padding: 32px 0; }

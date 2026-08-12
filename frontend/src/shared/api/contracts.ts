@@ -52,6 +52,7 @@ export interface HostMeeting {
   id: string;
   meetingAt: string;
   travelPattern: "shared_origin" | "individual_round_trip";
+  sharedOriginName: string | null;
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResult | null;

@@ -45,6 +45,7 @@ export interface HostMeetingView {
   id: string;
   meetingAt: string;
   travelPattern: TravelPattern;
+  sharedOriginName: string | null;
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResultView | null;
@@ -55,5 +56,6 @@ export interface HostMeetingView {
 export interface PublicMeetingView {
   meetingAt: string;
   travelPattern: TravelPattern;
+  sharedOriginName: string | null;
   participantCount: number;
 }

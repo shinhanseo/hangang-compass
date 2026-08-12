@@ -78,6 +78,27 @@ export function createMeetingRouter(services: ApplicationServices) {
     });
   });
 
+  router.put("/meetings/:meetingId/shared-origin", async (request, response) => {
+    const requestCookies = parseCookies(request.headers.cookie);
+    const placeId = typeof request.body?.placeId === "string" ? request.body.placeId.trim() : "";
+    const placeName = typeof request.body?.placeName === "string" ? request.body.placeName.trim() : "";
+    if (!placeId || placeId.length > 80 || !placeName || placeName.length > 100) {
+      response.status(400).json({ error: "invalid_shared_origin" });
+      return;
+    }
+    const result = await services.setSharedOrigin({
+      meetingId: request.params.meetingId,
+      hostToken: requestCookies[`hc_host_${request.params.meetingId}`],
+      placeId,
+      placeName,
+    });
+    if (!result) {
+      response.status(403).json({ error: "shared_origin_denied" });
+      return;
+    }
+    response.json(result);
+  });
+
   router.post("/meetings/:meetingId/confirmation", async (request, response) => {
     const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
     const requestCookies = parseCookies(request.headers.cookie);

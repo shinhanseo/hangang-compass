@@ -279,12 +279,20 @@ test("shared-origin meeting reuses the common outbound and keeps private destina
   const hostCookie = createdResponse.headers.get("set-cookie")!;
   const created = await createdResponse.json();
   const inviteToken = created.invitePath.split("/").at(-1);
+  const setOriginResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/shared-origin`, {
+    method: "PUT",
+    headers: { cookie: hostCookie.split(";")[0]!, "content-type": "application/json" },
+    body: JSON.stringify({ placeId: "hongdae", placeName: "홍대입구역" }),
+  });
+  assert.equal(setOriginResponse.status, 200);
+  assert.deepEqual(await setOriginResponse.json(), { sharedOriginName: "홍대입구역" });
   const publicMeeting = await (await fetch(`${baseUrl}/api/invites/${inviteToken}`)).json();
   assert.equal(publicMeeting.meeting.travelPattern, "shared_origin");
+  assert.equal(publicMeeting.meeting.sharedOriginName, "홍대입구역");
 
   for (const participant of [
-    { alias: "민지", originPlaceId: "hongdae", originPlaceName: "홍대입구역", destinationPlaceId: "gangnam", destinationPlaceName: "강남역" },
-    { alias: "준호", originPlaceId: "hongdae", originPlaceName: "홍대입구역", destinationPlaceId: "nowon", destinationPlaceName: "노원역" },
+    { alias: "민지", destinationPlaceId: "gangnam", destinationPlaceName: "강남역" },
+    { alias: "준호", destinationPlaceId: "nowon", destinationPlaceName: "노원역" },
   ]) {
     const joined = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
@@ -299,6 +307,7 @@ test("shared-origin meeting reuses the common outbound and keeps private destina
   })).json();
   const result = hostView.meeting.result;
   assert.equal(hostView.meeting.travelPattern, "shared_origin");
+  assert.equal(hostView.meeting.sharedOriginName, "홍대입구역");
   assert.equal(result.travelPattern, "shared_origin");
   assert.ok(result.recommended.returnTravel);
   assert.ok(result.recommended.participantTimes.every((item: { returnMinutes: number | null }) => item.returnMinutes !== null));
@@ -307,4 +316,11 @@ test("shared-origin meeting reuses the common outbound and keeps private destina
   assert.equal(JSON.stringify(hostView).includes("originPlace"), false);
   assert.equal(JSON.stringify(hostView).includes("destinationPlace"), false);
   assert.equal(routeCalls, 33);
+
+  const lateChange = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/shared-origin`, {
+    method: "PUT",
+    headers: { cookie: hostCookie.split(";")[0]!, "content-type": "application/json" },
+    body: JSON.stringify({ placeId: "gangnam", placeName: "강남역" }),
+  });
+  assert.equal(lateChange.status, 403);
 });

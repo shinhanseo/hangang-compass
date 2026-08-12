@@ -24,7 +24,11 @@ export async function joinMeeting(
   if (!meeting || meeting.participants.length >= 8) {
     return null;
   }
-  const origin = await origins.resolve({ id: input.originPlaceId, name: input.originPlaceName });
+  const requestedOrigin = meeting.travelPattern === "shared_origin"
+    ? meeting.sharedOrigin
+    : { placeId: input.originPlaceId, placeName: input.originPlaceName };
+  if (!requestedOrigin) return null;
+  const origin = await origins.resolve({ id: requestedOrigin.placeId, name: requestedOrigin.placeName });
   if (!origin) return null;
   const requestedDestination = meeting.travelPattern === "individual_round_trip"
     ? { id: origin.id, name: origin.name }

@@ -17,6 +17,10 @@ export interface Meeting {
   id: string;
   meetingAt: string;
   travelPattern: TravelPattern;
+  sharedOrigin: {
+    placeId: string;
+    placeName: string;
+  } | null;
   inviteTokenHash: string;
   hostTokenHash: string;
   participants: Participant[];

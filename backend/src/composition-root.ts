@@ -13,6 +13,7 @@ import { InMemoryMeetingRepository } from "./infrastructure/persistence/in-memor
 import { NodeCapabilityTokenService } from "./infrastructure/security/node-capability-token-service.js";
 import { FakeOriginPlaceProvider } from "./infrastructure/providers/fake/fake-origin-place-provider.js";
 import type { TravelPattern } from "./domain/meeting/meeting.js";
+import { setSharedOrigin } from "./application/use-cases/set-shared-origin.js";
 
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
@@ -38,6 +39,8 @@ export function createApplicationServices(options: {
       joinMeeting(repository, tokens, recommendations, origins, input),
     hostMeeting: (meetingId: string, hostToken: string | undefined) =>
       getHostMeeting(repository, tokens, recommendations, meetingId, hostToken),
+    setSharedOrigin: (input: { meetingId: string; hostToken: string | undefined; placeId: string; placeName: string }) =>
+      setSharedOrigin(repository, tokens, origins, input),
     confirmMeetingPark: (meetingId: string, hostToken: string | undefined, parkId: string) =>
       confirmMeetingPark(repository, tokens, recommendations, meetingId, hostToken, parkId),
   };

@@ -116,6 +116,7 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
     id: meeting.id,
     meetingAt: meeting.meetingAt,
     travelPattern: meeting.travelPattern,
+    sharedOriginName: meeting.sharedOrigin?.placeName ?? null,
     participantCount: meeting.participants.length,
     participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
     result,

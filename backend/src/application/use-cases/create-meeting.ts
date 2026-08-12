@@ -17,6 +17,7 @@ export async function createMeeting(dependencies: CreateMeetingDependencies, mee
     id: dependencies.tokens.generateId(),
     meetingAt,
     travelPattern,
+    sharedOrigin: null,
     inviteTokenHash: dependencies.tokens.hashCapability(inviteToken),
     hostTokenHash: dependencies.tokens.hashCapability(hostToken),
     participants: [],

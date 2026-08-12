@@ -10,6 +10,7 @@ export function getPublicMeeting(
   return meeting ? {
     meetingAt: meeting.meetingAt,
     travelPattern: meeting.travelPattern,
+    sharedOriginName: meeting.sharedOrigin?.placeName ?? null,
     participantCount: meeting.participants.length,
   } : null;
 }

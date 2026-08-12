@@ -12,11 +12,13 @@ export function participantInput(body: unknown) {
   const originPlaceName = typeof candidate.originPlaceName === "string" ? candidate.originPlaceName.trim() : "";
   const destinationPlaceId = typeof candidate.destinationPlaceId === "string" ? candidate.destinationPlaceId.trim() : "";
   const destinationPlaceName = typeof candidate.destinationPlaceName === "string" ? candidate.destinationPlaceName.trim() : "";
+  const originValid = (originPlaceId.length === 0 && originPlaceName.length === 0)
+    || (originPlaceId.length >= 1 && originPlaceId.length <= 80 && originPlaceName.length >= 1 && originPlaceName.length <= 100);
+  const destinationValid = (destinationPlaceId.length === 0 && destinationPlaceName.length === 0)
+    || (destinationPlaceId.length >= 1 && destinationPlaceId.length <= 80 && destinationPlaceName.length >= 1 && destinationPlaceName.length <= 100);
   return alias.length >= 1 && alias.length <= 20
-    && originPlaceId.length >= 1 && originPlaceId.length <= 80
-    && originPlaceName.length >= 1 && originPlaceName.length <= 100
-    && (destinationPlaceId.length === 0 || destinationPlaceId.length <= 80)
-    && (destinationPlaceName.length === 0 || destinationPlaceName.length <= 100)
+    && originValid
+    && destinationValid
     ? { alias, originPlaceId, originPlaceName, destinationPlaceId, destinationPlaceName }
     : null;
 }
