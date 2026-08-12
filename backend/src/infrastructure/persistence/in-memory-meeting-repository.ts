@@ -18,4 +18,12 @@ export class InMemoryMeetingRepository implements MeetingRepository {
     const id = this.#inviteIndex.get(inviteTokenHash);
     return id ? this.#meetings.get(id) : undefined;
   }
+
+  async deleteById(id: string): Promise<boolean> {
+    const meeting = this.#meetings.get(id);
+    if (!meeting) return false;
+    this.#meetings.delete(id);
+    for (const hash of meeting.inviteTokenHashes) this.#inviteIndex.delete(hash);
+    return true;
+  }
 }

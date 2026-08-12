@@ -20,6 +20,7 @@ import { createHostRecoveryLink } from "./application/use-cases/create-host-reco
 import { recoverHostAccess } from "./application/use-cases/recover-host-access.js";
 import type { MeetingRepository } from "./application/ports/meeting-repository.js";
 import { getHostAccessSummary } from "./application/use-cases/get-host-access-summary.js";
+import { deleteMeeting } from "./application/use-cases/delete-meeting.js";
 
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
@@ -59,6 +60,8 @@ export function createApplicationServices(options: {
       createHostRecoveryLink(repository, tokens, meetingId, hostToken),
     recoverHostAccess: (meetingId: string, hostToken: string, inviteToken: string) =>
       recoverHostAccess(repository, tokens, meetingId, hostToken, inviteToken),
+    deleteMeeting: (meetingId: string, hostToken: string | undefined) =>
+      deleteMeeting(repository, tokens, meetingId, hostToken),
   };
 }
 

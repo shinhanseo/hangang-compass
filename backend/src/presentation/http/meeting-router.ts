@@ -182,5 +182,20 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json(confirmation);
   });
 
+  router.delete("/meetings/:meetingId", async (request, response) => {
+    const requestCookies = parseCookies(request.headers.cookie);
+    const deleted = await services.deleteMeeting(
+      request.params.meetingId,
+      requestCookies[`hc_host_${request.params.meetingId}`],
+    );
+    if (!deleted) {
+      response.status(403).json({ error: "meeting_deletion_denied" });
+      return;
+    }
+    response.clearCookie(`hc_host_${request.params.meetingId}`, capabilityCookieOptions());
+    response.clearCookie(`hc_invite_${request.params.meetingId}`, capabilityCookieOptions());
+    response.json({ deleted: true });
+  });
+
   return router;
 }

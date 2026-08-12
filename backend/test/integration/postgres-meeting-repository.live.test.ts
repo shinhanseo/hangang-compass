@@ -31,6 +31,9 @@ test("PostgreSQL repository persists and indexes a meeting", { skip: !databaseUr
     await repository.save(meeting);
     assert.equal((await repository.findById(id))?.meetingAt, meeting.meetingAt);
     assert.equal((await repository.findByInviteTokenHash(inviteTokenHash))?.id, id);
+    assert.equal(await repository.deleteById(id), true);
+    assert.equal(await repository.findById(id), undefined);
+    assert.equal(await repository.findByInviteTokenHash(inviteTokenHash), undefined);
   } finally {
     await cleanup.query("DELETE FROM meetings WHERE id = $1", [id]);
     await cleanup.end();

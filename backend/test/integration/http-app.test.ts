@@ -161,6 +161,18 @@ test("create, invite, join twice, and recommend without exposing origins", async
     headers: { cookie: hostCookie.split(";")[0]! },
   });
   assert.equal((await refreshedHost.json()).meeting.confirmedParkId, selectedParkId);
+
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, { method: "DELETE" })).status, 403);
+  const deletionResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, {
+    method: "DELETE",
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal(deletionResponse.status, 200);
+  assert.deepEqual(await deletionResponse.json(), { deleted: true });
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
+    headers: { cookie: hostCookie.split(";")[0]! },
+  })).status, 403);
+  assert.equal((await fetch(`${baseUrl}/api/invites/${inviteToken}`)).status, 404);
 });
 
 test("live crowd and transit routes are cached and exposed through HTTP", async (context) => {

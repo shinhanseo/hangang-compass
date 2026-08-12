@@ -89,6 +89,10 @@ export class SqliteMeetingRepository implements MeetingRepository {
     return row ? parseMeeting(row.payload) : undefined;
   }
 
+  async deleteById(id: string): Promise<boolean> {
+    return Number(this.#database.prepare("DELETE FROM meetings WHERE id = ?").run(id).changes) > 0;
+  }
+
   deleteExpired(now = new Date()): number {
     return Number(this.#database.prepare("DELETE FROM meetings WHERE expires_at <= ?").run(now.toISOString()).changes);
   }

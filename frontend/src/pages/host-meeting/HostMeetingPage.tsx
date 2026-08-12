@@ -29,6 +29,9 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [provisionalNoticeOpen, setProvisionalNoticeOpen] = useState(false);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
+  const [deletingMeeting, setDeletingMeeting] = useState(false);
+  const [deletionError, setDeletionError] = useState("");
   const previousResult = useRef<HostMeeting["result"]>(null);
 
   async function refresh() {
@@ -188,6 +191,20 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
     }
   }
 
+  async function cancelMeeting() {
+    if (deletingMeeting) return;
+    setDeletingMeeting(true);
+    setDeletionError("");
+    try {
+      await api<{ deleted: true }>(`/api/meetings/${meetingId}`, { method: "DELETE" });
+      forgetRecentMeeting(meetingId);
+      navigate("/");
+    } catch {
+      setDeletionError("약속을 취소하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setDeletingMeeting(false);
+    }
+  }
+
   const needsSharedOrigin = data.meeting.travelPattern === "shared_origin" && !data.meeting.sharedOriginName;
   const needsHostPlace = !data.meeting.hostParticipantSubmitted;
   const setupIncomplete = needsSharedOrigin || needsHostPlace;
@@ -261,7 +278,24 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
       ) : (
         <section className="waiting-state"><span><AppIcon name="spark" /></span><h2>추천 시작까지 1명 남았어요</h2><p>친구 한 명 이상이 참여하면 추천을 시작하고, 이후 참여자가 늘어날 때마다 최대 8명까지 다시 계산해요.</p><div className="capacity-status"><strong>현재 {data.meeting.participantCount}명</strong><small>최소 2명 · 최대 8명</small></div></section>
       )}
+      <section className="meeting-cancel-area" aria-label="약속 관리">
+        <button type="button" onClick={() => { setDeletionError(""); setCancelSheetOpen(true); }}>약속 취소하기</button>
+        <p>취소하면 초대 링크와 참여 정보가 함께 삭제돼요.</p>
+      </section>
       {provisionalNoticeOpen && <ProvisionalRecommendationSheet onClose={() => setProvisionalNoticeOpen(false)} />}
+      {cancelSheetOpen && <div className="sheet-layer">
+        <button className="sheet-scrim" type="button" aria-label="약속 취소 닫기" onClick={() => !deletingMeeting && setCancelSheetOpen(false)} />
+        <section className="bottom-sheet cancel-meeting-sheet" role="dialog" aria-modal="true" aria-labelledby="cancel-meeting-title">
+          <div className="sheet-handle" />
+          <div className="sheet-header"><div><p>약속 관리</p><h2 id="cancel-meeting-title">이 약속을 취소할까요?</h2></div><button className="icon-button" type="button" aria-label="닫기" onClick={() => setCancelSheetOpen(false)} disabled={deletingMeeting}><AppIcon name="close" /></button></div>
+          <p className="cancel-meeting-copy">참여자의 이동 장소와 추천 결과가 삭제되고, 친구에게 보낸 초대 링크도 바로 사용할 수 없게 됩니다.</p>
+          {deletionError && <p className="error" role="alert">{deletionError}</p>}
+          <div className="cancel-meeting-actions">
+            <button type="button" className="secondary-action" onClick={() => setCancelSheetOpen(false)} disabled={deletingMeeting}>돌아가기</button>
+            <button type="button" className="danger-action" onClick={() => void cancelMeeting()} disabled={deletingMeeting}>{deletingMeeting ? "취소하는 중…" : "약속 취소"}</button>
+          </div>
+        </section>
+      </div>}
     </main>
   );
 }

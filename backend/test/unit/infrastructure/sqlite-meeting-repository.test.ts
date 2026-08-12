@@ -56,3 +56,14 @@ test("confirming a meeting extends retention through one day after its time", as
   assert.equal(repository.deleteExpired(new Date("2099-01-21T11:59:59.999Z")), 0);
   assert.equal(repository.deleteExpired(new Date("2099-01-21T12:00:00.000Z")), 1);
 });
+
+test("manual deletion removes the meeting and its invite capability", async (context) => {
+  const repository = new SqliteMeetingRepository(":memory:");
+  context.after(() => repository.close());
+  await repository.save(meeting());
+
+  assert.equal(await repository.deleteById("meeting-1"), true);
+  assert.equal(await repository.findById("meeting-1"), undefined);
+  assert.equal(await repository.findByInviteTokenHash("invite-hash"), undefined);
+  assert.equal(await repository.deleteById("meeting-1"), false);
+});

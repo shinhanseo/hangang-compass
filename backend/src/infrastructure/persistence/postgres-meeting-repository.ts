@@ -95,6 +95,12 @@ export class PostgresMeetingRepository implements MeetingRepository {
     return result.rows[0] ? parseMeeting(result.rows[0].payload) : undefined;
   }
 
+  async deleteById(id: string): Promise<boolean> {
+    await this.#ready;
+    const result = await this.#pool.query("DELETE FROM meetings WHERE id = $1", [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async deleteExpired(now = new Date()): Promise<number> {
     await this.#ready;
     const result = await this.#pool.query("DELETE FROM meetings WHERE expires_at <= $1", [now.toISOString()]);

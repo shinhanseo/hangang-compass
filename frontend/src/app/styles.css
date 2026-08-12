@@ -233,6 +233,15 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .host-privacy { margin: -1px 3px 0; }
 .waiting-state { display: grid; margin: 14px 16px 28px; padding: 30px 22px; border: 1px dashed #d7d8cd; border-radius: 24px; place-items: center; background: #f2f2ec; text-align: center; }.waiting-state > span { display: grid; width: 46px; height: 46px; margin-bottom: 12px; border-radius: 15px; place-items: center; color: var(--forest); background: var(--lime); font-weight: 850; }.waiting-state h2 { margin: 0; font-size: 18px; }.waiting-state p { max-width: 300px; margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }.waiting-state.compact { padding: 18px; }.progress-track { width: 100%; height: 5px; overflow: hidden; border-radius: 999px; background: #dddeda; }.progress-track i { display: block; width: 50%; height: 100%; border-radius: inherit; background: var(--olive); }.people-progress { display: flex; margin-top: 16px; gap: 6px; align-items: center; }.people-progress i { width: 12px; height: 12px; border: 2px solid var(--sage); border-radius: 50%; }.people-progress i.filled { border-color: var(--olive); background: var(--olive); }.people-progress small { margin-left: 3px; color: var(--muted); font-size: 11px; }
 .capacity-status { display: flex; margin-top: 17px; padding: 8px 12px; border-radius: 999px; align-items: center; gap: 8px; color: var(--forest); background: white; }.capacity-status strong { font-size: 11px; }.capacity-status small { color: var(--muted); font-size: 9px; }
+.meeting-cancel-area { display: grid; margin: 24px 20px 8px; padding: 20px 0 8px; border-top: 1px solid var(--line); place-items: center; text-align: center; }
+.meeting-cancel-area button { padding: 8px 12px; border: 0; color: #9a443e; background: transparent; font-size: 12px; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; }
+.meeting-cancel-area p { margin: 2px 0 0; color: var(--muted); font-size: 9px; }
+.cancel-meeting-copy { margin: -4px 0 20px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.cancel-meeting-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.secondary-action, .danger-action { min-height: 54px; border-radius: 16px; font-size: 14px; font-weight: 800; }
+.secondary-action { border: 1px solid var(--line); color: var(--forest); background: white; }
+.danger-action { border: 0; color: white; background: #9a443e; }
+.secondary-action:focus-visible, .danger-action:focus-visible, .meeting-cancel-area button:focus-visible { outline: 3px solid rgb(99 107 47 / 24%); outline-offset: 2px; }
 
 .invite-hero { position: relative; min-height: 270px; margin: 4px 14px 0; padding: 22px 20px 20px; overflow: hidden; border-radius: 28px; color: var(--forest); background: var(--sage); }
 .invite-eyebrow { position: relative; z-index: 2; margin: 2px 0 0; color: rgb(61 65 39 / 68%); font-size: 10px; font-weight: 750; }
