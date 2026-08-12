@@ -11,12 +11,12 @@ export interface Participant {
   } | null;
 }
 
-export type TripMode = "outbound_only" | "round_trip";
+export type TravelPattern = "shared_origin" | "individual_round_trip";
 
 export interface Meeting {
   id: string;
   meetingAt: string;
-  tripMode: TripMode;
+  travelPattern: TravelPattern;
   inviteTokenHash: string;
   hostTokenHash: string;
   participants: Participant[];

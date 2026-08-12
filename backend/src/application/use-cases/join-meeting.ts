@@ -26,10 +26,11 @@ export async function joinMeeting(
   }
   const origin = await origins.resolve({ id: input.originPlaceId, name: input.originPlaceName });
   if (!origin) return null;
-  const destination = meeting.tripMode === "round_trip"
-    ? await origins.resolve({ id: input.destinationPlaceId ?? "", name: input.destinationPlaceName ?? "" })
-    : null;
-  if (meeting.tripMode === "round_trip" && !destination) return null;
+  const requestedDestination = meeting.travelPattern === "individual_round_trip"
+    ? { id: origin.id, name: origin.name }
+    : { id: input.destinationPlaceId ?? "", name: input.destinationPlaceName ?? "" };
+  const destination = await origins.resolve(requestedDestination);
+  if (!destination) return null;
   meeting.participants.push({
     id: tokens.generateId(),
     alias: input.alias,

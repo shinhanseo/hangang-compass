@@ -1,6 +1,6 @@
 import type { TravelMetrics } from "../../domain/recommendation/recommendation.js";
 import type { ParkExperience } from "../../domain/park/park-experience.js";
-import type { TripMode } from "../../domain/meeting/meeting.js";
+import type { TravelPattern } from "../../domain/meeting/meeting.js";
 
 export type CandidateRole = "recommended" | "travel_alternative" | "experience_alternative";
 
@@ -28,7 +28,7 @@ export interface ParkResultView {
 }
 
 export interface RecommendationResultView {
-  tripMode: TripMode;
+  travelPattern: TravelPattern;
   stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResultView;
   alternatives: [ParkResultView, ParkResultView];
@@ -44,7 +44,7 @@ export interface RecommendationResultView {
 export interface HostMeetingView {
   id: string;
   meetingAt: string;
-  tripMode: TripMode;
+  travelPattern: TravelPattern;
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResultView | null;
@@ -54,6 +54,6 @@ export interface HostMeetingView {
 
 export interface PublicMeetingView {
   meetingAt: string;
-  tripMode: TripMode;
+  travelPattern: TravelPattern;
   participantCount: number;
 }

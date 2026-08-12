@@ -1,5 +1,5 @@
 import type { CrowdLevel } from "../crowd/crowd-snapshot.js";
-import type { TripMode } from "../meeting/meeting.js";
+import type { TravelPattern } from "../meeting/meeting.js";
 
 export type Freshness = "fresh" | "stale" | "unavailable";
 export type RecommendationStage = "provisional" | "current";
@@ -61,7 +61,7 @@ export interface CandidateInput {
 
 export interface RecommendationInput {
   stage: RecommendationStage;
-  tripMode?: TripMode;
+  travelPattern: TravelPattern;
   participantIds: string[];
   candidates: CandidateInput[];
 }
@@ -146,7 +146,7 @@ function exclusionReasons(input: RecommendationInput, candidate: CandidateInput)
   if (candidate.conditions.weather.value === "danger") reasons.push("dangerous_weather");
   if (!candidate.facilities.restroom) reasons.push("required_restroom_missing");
   if (!summarizeTravel(input.participantIds, candidate.routes)) reasons.push("participant_route_missing");
-  if (input.tripMode === "round_trip" && !summarizeTravel(input.participantIds, candidate.returnRoutes ?? [])) {
+  if (!summarizeTravel(input.participantIds, candidate.returnRoutes ?? [])) {
     reasons.push("participant_return_route_missing");
   }
   return reasons;
@@ -195,9 +195,7 @@ export function evaluateCandidate(
 ): EvaluatedCandidate {
   const excluded = exclusionReasons(input, candidate);
   const travel = summarizeTravel(input.participantIds, candidate.routes);
-  const returnTravel = input.tripMode === "round_trip"
-    ? summarizeTravel(input.participantIds, candidate.returnRoutes ?? [])
-    : null;
+  const returnTravel = summarizeTravel(input.participantIds, candidate.returnRoutes ?? []);
   const warnings: string[] = [];
   const crowd = crowdPenalty(input.stage, candidate, warnings);
   const weather = sourcedPenalty(
@@ -239,10 +237,8 @@ export function evaluateCandidate(
     metrics.averageMinutes * policy.averageWeight
     + metrics.maximumMinutes * policy.maximumWeight
     + metrics.rangeMinutes * policy.rangeWeight;
-  const travelPenalty = travel && (input.tripMode !== "round_trip" || returnTravel)
-    ? round1(input.tripMode === "round_trip"
-      ? (fairnessPenalty(travel) + fairnessPenalty(returnTravel!)) / 2
-      : fairnessPenalty(travel))
+  const travelPenalty = travel && returnTravel
+    ? round1((fairnessPenalty(travel) + fairnessPenalty(returnTravel)) / 2)
     : null;
 
   return {

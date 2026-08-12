@@ -39,9 +39,8 @@ function TravelMetrics({ title, travel }: { title: string; travel: ParkResult["t
   </dl></section>;
 }
 
-function ResultCard({ park, tripMode, primary = false, confirmed = false, onConfirm }: {
+function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
   park: ParkResult;
-  tripMode: Recommendation["tripMode"];
   primary?: boolean;
   confirmed?: boolean;
   onConfirm?: (park: ParkResult) => void;
@@ -55,7 +54,7 @@ function ResultCard({ park, tripMode, primary = false, confirmed = false, onConf
       <h2>{park.parkName}</h2>
       <p className="meeting-point">{park.meetingPoint}</p>
       <p className="selection-reason">{park.selectionReason}</p>
-      <TravelMetrics title={tripMode === "round_trip" ? "갈 때" : "한강까지"} travel={park.travel} />
+      <TravelMetrics title="갈 때" travel={park.travel} />
       {park.returnTravel && <TravelMetrics title="약속 후" travel={park.returnTravel} />}
       <section className="experience">
         <h3>여기서 즐길 수 있어요</h3>
@@ -100,15 +99,15 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm }: {
             : result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"
         }</p>
         <h1>지금은 여기가 가장 공평해요</h1>
-        <p className="mode-summary">{result.tripMode === "round_trip" ? "갈 때 50% · 약속 후 50%로 비교했어요." : "한강으로 갈 때의 이동만 비교했어요."}</p>
+        <p className="mode-summary">{result.travelPattern === "shared_origin" ? "함께 출발하는 길 50% · 각자 귀가 50%로 비교했어요." : "각자 갈 때 50% · 각자 귀가 50%로 비교했어요."}</p>
         <p>{result.explanation}</p>
         {result.travelData.calculatedAt && <p className="data-time">카카오 경로 조회 기준 {dateTime(result.travelData.calculatedAt)}</p>}
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}
       </div>
       <div className="result-grid">
-        <ResultCard park={result.recommended} tripMode={result.tripMode} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
+        <ResultCard park={result.recommended} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
         {result.alternatives.map((park) => (
-          <ResultCard key={park.parkId} park={park} tripMode={result.tripMode} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />
+          <ResultCard key={park.parkId} park={park} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />
         ))}
       </div>
       <p className="prototype-notice">{result.notice}</p>

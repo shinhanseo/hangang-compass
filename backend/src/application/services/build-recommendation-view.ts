@@ -17,7 +17,7 @@ export async function buildRecommendationView(
   const candidates = dataSource.candidates(meeting.participants, meeting.meetingAt);
   const result = recommend({
     stage,
-    tripMode: meeting.tripMode,
+    travelPattern: meeting.travelPattern,
     participantIds: meeting.participants.map((participant) => participant.id),
     candidates,
   }, FAIRNESS_POLICIES.balanced);
@@ -36,7 +36,7 @@ export async function buildRecommendationView(
   const travelData = dataSource.travelData(meeting.participants);
 
   const roundTripExplanation = () => {
-    if (meeting.tripMode !== "round_trip" || !result.recommended?.returnTravel || !travelAlternative.returnTravel) {
+    if (!result.recommended?.returnTravel || !travelAlternative.returnTravel) {
       return result.comparison?.summary ?? "이동 공평성을 기준으로 비교했습니다.";
     }
     const outboundDelta = Math.round((result.recommended.travel!.averageMinutes - travelAlternative.travel!.averageMinutes) * 10) / 10;
@@ -56,21 +56,10 @@ export async function buildRecommendationView(
 
   const view = (candidate: EvaluatedCandidate, role: CandidateRole) => {
     const experience = dataSource.experienceFor(candidate.parkId);
-    const averageDelta = Math.round(
-      ((candidate.travel?.averageMinutes ?? 0) - result.recommended!.travel!.averageMinutes) * 10,
-    ) / 10;
     const selectionReason = role === "recommended"
-      ? meeting.tripMode === "round_trip"
-        ? "갈 때와 귀가의 평균·최장·참여자 간 차이를 각각 계산해 반씩 반영한 1순위예요."
-        : "이동시간의 평균·최장·참여자 간 차이를 함께 본 전체 균형 1순위예요."
+      ? "갈 때와 귀가의 평균·최장·참여자 간 차이를 각각 계산해 반씩 반영한 1순위예요."
       : role === "travel_alternative"
-        ? meeting.tripMode === "round_trip"
-          ? "갈 때와 귀가를 함께 본 전체 균형 점수가 다음으로 좋은 선택지예요."
-          : averageDelta === 0
-          ? "전체 균형 점수가 다음으로 좋고 평균 이동시간은 추천 장소와 같아요."
-          : averageDelta < 0
-            ? `전체 균형 점수가 다음으로 좋고 평균 이동시간은 ${Math.abs(averageDelta)}분 더 짧아요.`
-            : `전체 균형 점수가 다음으로 좋지만 평균 이동시간은 ${averageDelta}분 더 걸려요.`
+        ? "갈 때와 귀가를 함께 본 전체 균형 점수가 다음으로 좋은 선택지예요."
         : "상위 후보 중 추천 장소와 다른 대표 즐길거리를 가진 선택지예요.";
     return {
       role,
@@ -99,7 +88,7 @@ export async function buildRecommendationView(
   };
 
   return {
-    tripMode: meeting.tripMode,
+    travelPattern: meeting.travelPattern,
     stage: crowdSource === "fake"
       ? "fake_provisional"
       : stage === "current" ? "live_current" : "live_provisional",
@@ -126,7 +115,7 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
   return {
     id: meeting.id,
     meetingAt: meeting.meetingAt,
-    tripMode: meeting.tripMode,
+    travelPattern: meeting.travelPattern,
     participantCount: meeting.participants.length,
     participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
     result,

@@ -31,12 +31,10 @@ input:focus, select:focus { outline: 3px solid rgb(8 127 91 / 18%); border-color
 .mode-picker legend { margin-bottom: 8px; font-size: 14px; font-weight: 750; }
 .mode-picker label { display: flex; gap: 12px; align-items: flex-start; margin: 0; padding: 14px; border: 1px solid #d5dfda; border-radius: 12px; cursor: pointer; }
 .mode-picker label.selected { border-color: #087f5b; background: #f0f8f4; box-shadow: 0 0 0 2px rgb(8 127 91 / 10%); }
-.mode-picker input, .same-place input { width: 20px; min-height: 20px; margin: 2px 0 0; accent-color: #087f5b; }
+.mode-picker input { width: 20px; min-height: 20px; margin: 2px 0 0; accent-color: #087f5b; }
 .mode-picker span { display: grid; gap: 4px; }
 .mode-picker small { color: #66776f; font-weight: 500; line-height: 1.4; }
 .place-field { display: grid; gap: 10px; }
-.same-place { display: flex; gap: 10px; align-items: flex-start; padding: 12px 2px; cursor: pointer; }
-.same-place span { line-height: 1.45; }
 .error { margin: 0; color: #b42318; font-size: 14px; }
 .place-status:empty { display: none; }
 .selected-place { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 12px 14px; border-radius: 11px; color: #17634e; background: #e8f3ee; }

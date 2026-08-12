@@ -21,8 +21,8 @@ export function participantInput(body: unknown) {
     : null;
 }
 
-export function tripMode(value: unknown) {
-  return value === "outbound_only" || value === "round_trip" ? value : null;
+export function travelPattern(value: unknown) {
+  return value === "shared_origin" || value === "individual_round_trip" ? value : null;
 }
 
 export function placeQuery(value: unknown): string | null {

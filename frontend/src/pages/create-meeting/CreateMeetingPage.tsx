@@ -12,7 +12,7 @@ function defaultMeetingTime(): string {
 
 export function CreateMeetingPage() {
   const [meetingAt, setMeetingAt] = useState(defaultMeetingTime);
-  const [tripMode, setTripMode] = useState<"outbound_only" | "round_trip">("outbound_only");
+  const [travelPattern, setTravelPattern] = useState<"shared_origin" | "individual_round_trip">("shared_origin");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -23,7 +23,7 @@ export function CreateMeetingPage() {
     try {
       const body = await api<{ meeting: HostMeeting }>("/api/meetings", {
         method: "POST",
-        body: JSON.stringify({ meetingAt: new Date(meetingAt).toISOString(), tripMode }),
+        body: JSON.stringify({ meetingAt: new Date(meetingAt).toISOString(), travelPattern }),
       });
       navigate(`/host/${body.meeting.id}`);
     } catch {
@@ -44,14 +44,14 @@ export function CreateMeetingPage() {
         <label htmlFor="meeting-at">모두가 도착할 날짜와 시간</label>
         <input id="meeting-at" type="datetime-local" value={meetingAt} onInput={(event) => setMeetingAt(event.currentTarget.value)} required />
         <fieldset className="mode-picker">
-          <legend>어떤 이동을 비교할까요?</legend>
-          <label className={tripMode === "outbound_only" ? "selected" : ""}>
-            <input type="radio" name="trip-mode" value="outbound_only" checked={tripMode === "outbound_only"} onChange={() => setTripMode("outbound_only")} />
-            <span><strong>갈 때만 비교</strong><small>각자 출발 장소에서 한강까지 비교해요.</small></span>
+          <legend>친구들이 어떻게 이동하나요?</legend>
+          <label className={travelPattern === "shared_origin" ? "selected" : ""}>
+            <input type="radio" name="travel-pattern" value="shared_origin" checked={travelPattern === "shared_origin"} onChange={() => setTravelPattern("shared_origin")} />
+            <span><strong>같은 곳에서 출발해요</strong><small>학교처럼 한곳에서 출발하고, 약속 후에는 각자 다른 곳으로 가요.</small></span>
           </label>
-          <label className={tripMode === "round_trip" ? "selected" : ""}>
-            <input type="radio" name="trip-mode" value="round_trip" checked={tripMode === "round_trip"} onChange={() => setTripMode("round_trip")} />
-            <span><strong>왕복까지 비교</strong><small>한강에서 각자의 다음 장소로 가는 길도 반영해요.</small></span>
+          <label className={travelPattern === "individual_round_trip" ? "selected" : ""}>
+            <input type="radio" name="travel-pattern" value="individual_round_trip" checked={travelPattern === "individual_round_trip"} onChange={() => setTravelPattern("individual_round_trip")} />
+            <span><strong>각자 출발해 다시 돌아가요</strong><small>각자 가까운 공개 장소에서 출발하고 같은 곳으로 돌아가요.</small></span>
           </label>
         </fieldset>
         {error && <p className="error">{error}</p>}

@@ -12,7 +12,7 @@ import { LiveRouteRecommendationDataSource } from "./infrastructure/providers/ka
 import { InMemoryMeetingRepository } from "./infrastructure/persistence/in-memory-meeting-repository.js";
 import { NodeCapabilityTokenService } from "./infrastructure/security/node-capability-token-service.js";
 import { FakeOriginPlaceProvider } from "./infrastructure/providers/fake/fake-origin-place-provider.js";
-import type { TripMode } from "./domain/meeting/meeting.js";
+import type { TravelPattern } from "./domain/meeting/meeting.js";
 
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
@@ -32,7 +32,7 @@ export function createApplicationServices(options: {
 
   return {
     searchOriginPlaces: (query: string) => origins.search(query),
-    createMeeting: (meetingAt: string, tripMode: TripMode) => createMeeting({ repository, tokens, recommendations }, meetingAt, tripMode),
+    createMeeting: (meetingAt: string, travelPattern: TravelPattern) => createMeeting({ repository, tokens, recommendations }, meetingAt, travelPattern),
     publicMeeting: (inviteToken: string) => getPublicMeeting(repository, tokens, inviteToken),
     joinMeeting: (input: { inviteToken: string; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string }) =>
       joinMeeting(repository, tokens, recommendations, origins, input),

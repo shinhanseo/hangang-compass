@@ -54,7 +54,7 @@ test("keeps a failed participant route null so the candidate is excluded", async
     .every((candidate) => candidate.routes[1]?.minutes === null));
 });
 
-test("round-trip preparation deduplicates places and keeps direction-specific routes", async () => {
+test("shared-origin preparation deduplicates the common outbound and keeps direction-specific routes", async () => {
   let calls = 0;
   const routes: TransitRouteProvider = {
     routeFor: async (origin, destination) => {

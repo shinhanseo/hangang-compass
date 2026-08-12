@@ -35,6 +35,7 @@ function fixture(
 ): RecommendationInput {
   return {
     stage,
+    travelPattern: "individual_round_trip",
     participantIds: PARTICIPANTS,
     candidates: PARKS.map(([parkId, parkName], index) => {
       const override = overrides[parkId] ?? {};
@@ -42,6 +43,7 @@ function fixture(
         parkId,
         parkName,
         routes: routes(override.routes ?? [80 + index, 82 + index, 84 + index]),
+        returnRoutes: routes(override.routes ?? [80 + index, 82 + index, 84 + index]),
         meetingPointStatus: override.meetingPointStatus ?? "verified",
         facilities: { restroom: override.facilities?.restroom ?? true },
         conditions: {

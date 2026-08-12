@@ -138,7 +138,7 @@ test("recommendation is deterministic and does not mutate fixture input", () => 
   assert.equal(JSON.stringify(fixture), before);
 });
 
-test("round-trip mode weighs outbound and return fairness equally", () => {
+test("travel patterns weigh outbound and return fairness equally", () => {
   const base = structuredClone(RECOMMENDATION_CASES.exactTie.candidates[0]!);
   const participants = ["p1", "p2"];
   const fasterOutbound = {
@@ -151,21 +151,18 @@ test("round-trip mode weighs outbound and return fairness equally", () => {
   const balancedBothWays = {
     ...base,
     parkId: "balanced-both",
-    parkName: "왕복 균형 공원",
+    parkName: "양방향 균형 공원",
     routes: participants.map((participantId) => ({ participantId, minutes: 25 })),
     returnRoutes: participants.map((participantId) => ({ participantId, minutes: 25 })),
   };
 
-  const outbound = recommend({ stage: "provisional", participantIds: participants, candidates: [fasterOutbound, balancedBothWays] }, FAIRNESS_POLICIES.balanced);
-  const roundTrip = recommend({ stage: "provisional", tripMode: "round_trip", participantIds: participants, candidates: [fasterOutbound, balancedBothWays] }, FAIRNESS_POLICIES.balanced);
-
-  assert.equal(outbound.recommended?.parkId, "faster-outbound");
-  assert.equal(roundTrip.recommended?.parkId, "balanced-both");
-  assert.equal(roundTrip.recommended?.penalties.travel, 20);
-  assert.deepEqual(roundTrip.recommended?.returnTravel, { averageMinutes: 25, maximumMinutes: 25, rangeMinutes: 0 });
+  const result = recommend({ stage: "provisional", travelPattern: "individual_round_trip", participantIds: participants, candidates: [fasterOutbound, balancedBothWays] }, FAIRNESS_POLICIES.balanced);
+  assert.equal(result.recommended?.parkId, "balanced-both");
+  assert.equal(result.recommended?.penalties.travel, 20);
+  assert.deepEqual(result.recommended?.returnTravel, { averageMinutes: 25, maximumMinutes: 25, rangeMinutes: 0 });
 });
 
-test("round-trip mode excludes a park when any return route is missing", () => {
+test("all travel patterns exclude a park when any return route is missing", () => {
   const input = structuredClone(RECOMMENDATION_CASES.exactTie);
   input.candidates[0]!.returnRoutes = input.candidates[0]!.routes.map((route, index) => ({
     ...route,
@@ -173,6 +170,6 @@ test("round-trip mode excludes a park when any return route is missing", () => {
   }));
   for (const candidate of input.candidates.slice(1)) candidate.returnRoutes = structuredClone(candidate.routes);
 
-  const result = recommend({ ...input, tripMode: "round_trip" }, FAIRNESS_POLICIES.balanced);
+  const result = recommend({ ...input, travelPattern: "shared_origin" }, FAIRNESS_POLICIES.balanced);
   assert.ok(result.excluded[0]?.exclusionReasons.includes("participant_return_route_missing"));
 });

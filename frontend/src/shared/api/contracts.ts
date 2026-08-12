@@ -35,7 +35,7 @@ export interface ParkResult {
 }
 
 export interface RecommendationResult {
-  tripMode: "outbound_only" | "round_trip";
+  travelPattern: "shared_origin" | "individual_round_trip";
   stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResult;
   alternatives: [ParkResult, ParkResult];
@@ -51,7 +51,7 @@ export interface RecommendationResult {
 export interface HostMeeting {
   id: string;
   meetingAt: string;
-  tripMode: "outbound_only" | "round_trip";
+  travelPattern: "shared_origin" | "individual_round_trip";
   participantCount: number;
   participants: Array<{ alias: string }>;
   result: RecommendationResult | null;
