@@ -69,7 +69,31 @@ test("create, invite, join twice, and recommend without exposing origins", async
   const hostView = await hostResponse.json();
   assert.equal(hostView.meeting.participantCount, 2);
   assert.ok(hostView.meeting.result.recommended.parkName);
-  assert.ok(hostView.meeting.result.alternative.parkName);
+  assert.equal(hostView.meeting.result.alternatives.length, 2);
+  assert.deepEqual(
+    hostView.meeting.result.alternatives.map((item: { role: string }) => item.role),
+    ["travel_alternative", "experience_alternative"],
+  );
+  assert.equal(new Set([
+    hostView.meeting.result.recommended.parkId,
+    ...hostView.meeting.result.alternatives.map((item: { parkId: string }) => item.parkId),
+  ]).size, 3);
+  assert.equal(hostView.meeting.result.recommended.arrivalCrowd.status, "fake_sample");
+  assert.match(hostView.meeting.result.recommended.experience.sourceUrl, /^https:\/\/hangang\.seoul\.go\.kr\//u);
   assert.equal(JSON.stringify(hostView).includes("stationId"), false);
   assert.equal(JSON.stringify(hostView).includes("hongdae"), false);
+
+  const selectedParkId = hostView.meeting.result.alternatives[1].parkId;
+  const confirmationResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/confirmation`, {
+    method: "POST",
+    headers: { cookie: hostCookie.split(";")[0]!, "content-type": "application/json" },
+    body: JSON.stringify({ parkId: selectedParkId }),
+  });
+  assert.equal(confirmationResponse.status, 200);
+  assert.equal((await confirmationResponse.json()).confirmedParkId, selectedParkId);
+
+  const refreshedHost = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal((await refreshedHost.json()).meeting.confirmedParkId, selectedParkId);
 });

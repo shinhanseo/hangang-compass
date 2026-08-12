@@ -1,6 +1,7 @@
 import type { RecommendationDataSource } from "../../../application/ports/recommendation-data-source.js";
 import type { Participant } from "../../../domain/meeting/meeting.js";
 import type { CandidateInput } from "../../../domain/recommendation/recommendation.js";
+import { parkExperienceFor } from "../../catalog/park-experience-catalog.js";
 
 const FAKE_STATIONS = [
   { id: "hongdae", name: "홍대입구역" },
@@ -32,6 +33,20 @@ const TIMES: Record<string, Record<string, number>> = {
   konkuk: { gangseo: 72, gwangnaru: 32, nanji: 65, ttukseom: 14, mangwon: 51, banpo: 35, yanghwa: 48, yeouido: 35, ichon: 30, jamsil: 24, jamwon: 31 },
   sadang: { gangseo: 65, gwangnaru: 51, nanji: 57, ttukseom: 35, mangwon: 44, banpo: 25, yanghwa: 39, yeouido: 29, ichon: 24, jamsil: 36, jamwon: 23 },
   yeongdeungpo: { gangseo: 42, gwangnaru: 62, nanji: 47, ttukseom: 45, mangwon: 31, banpo: 39, yanghwa: 19, yeouido: 18, ichon: 29, jamsil: 50, jamwon: 43 },
+};
+
+const FAKE_ARRIVAL_CROWD = {
+  gangseo: ["relaxed", "여유"] as const,
+  gwangnaru: ["normal", "보통"] as const,
+  nanji: ["relaxed", "여유"] as const,
+  ttukseom: ["busy", "붐빔"] as const,
+  mangwon: ["normal", "보통"] as const,
+  banpo: ["very_busy", "매우 붐빔"] as const,
+  yanghwa: ["relaxed", "여유"] as const,
+  yeouido: ["normal", "보통"] as const,
+  ichon: ["relaxed", "여유"] as const,
+  jamsil: ["normal", "보통"] as const,
+  jamwon: ["normal", "보통"] as const,
 };
 
 function stationExists(stationId: string): boolean {
@@ -78,5 +93,15 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
 
   meetingPointFor(parkId: string): string {
     return meetingPointFor(parkId);
+  }
+
+  experienceFor(parkId: string) {
+    return parkExperienceFor(parkId);
+  }
+
+  arrivalCrowdFor(parkId: string) {
+    const [level, label] = FAKE_ARRIVAL_CROWD[parkId as keyof typeof FAKE_ARRIVAL_CROWD]
+      ?? ["normal", "보통"] as const;
+    return { level, label, status: "fake_sample" as const };
   }
 }

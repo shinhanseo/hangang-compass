@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { RecommendationResult } from "../../features/recommendation/RecommendationResult";
-import type { HostMeeting } from "../../shared/api/contracts";
+import type { HostMeeting, ParkResult } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { navigate } from "../../shared/lib/navigation";
@@ -30,6 +30,17 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
     setCopied(true);
   }
 
+  async function confirmPark(park: ParkResult) {
+    const confirmed = await api<{ confirmedParkId: string }>(`/api/meetings/${meetingId}/confirmation`, {
+      method: "POST",
+      body: JSON.stringify({ parkId: park.parkId }),
+    });
+    setData((current) => current ? {
+      ...current,
+      meeting: { ...current.meeting, confirmedParkId: confirmed.confirmedParkId },
+    } : current);
+  }
+
   return (
     <main className="shell">
       <section className="topbar">
@@ -45,7 +56,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
         </div>
         {data.meeting.participants.length > 0 && <p className="submitted">참여 완료: {data.meeting.participants.map((item) => item.alias).join(", ")}</p>}
       </section>
-      {data.meeting.result ? <RecommendationResult result={data.meeting.result} /> : (
+      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={(park) => void confirmPark(park)} /> : (
         <section className="waiting"><h2>친구 2명의 입력을 기다리고 있어요</h2><p>공유 링크를 다른 탭에서 열어 두 번 제출한 뒤 새로고침하면 추천이 나타납니다.</p></section>
       )}
     </main>

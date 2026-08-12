@@ -27,9 +27,10 @@
 - 친구들과의 한강 피크닉
 - 참여자별 출발역 또는 장소 입력
 - 대중교통 이동 공평성 비교
-- 추천 공원 1곳과 대안 1곳
+- 추천 공원 1곳과 성격이 다른 대안 2곳
 - 공원 내부의 정확한 만남 지점
 - 도착 시점 혼잡·날씨·행사 근거
+- 공원별 피크닉 특징·대표 즐길거리·이용 제한
 - 설치와 필수 회원가입 없는 링크 참여
 
 혼잡 예측 범위 밖의 약속에는 임시 추천을 제공하고, 약속 12시간 이내에 최신 데이터를 반영합니다. 추천 장소가 달라져도 방장 승인 없이 확정 장소를 변경하지 않습니다.
@@ -42,6 +43,7 @@
 - [Clean architecture decision](./docs/adr/002-clean-architecture-boundaries.md)
 - [Data source ledger](./docs/DATA_SOURCES.md)
 - [Meeting point catalog](./docs/MEETING_POINTS.md)
+- [Park experience catalog](./docs/PARK_EXPERIENCES.md)
 - [Experimental recommendation rules](./docs/RECOMMENDATION_RULES.md)
 - [Privacy and sharing-link threat model](./docs/PRIVACY_THREAT_MODEL.md)
 - [Privacy notice draft](./docs/PRIVACY_NOTICE_DRAFT.md)

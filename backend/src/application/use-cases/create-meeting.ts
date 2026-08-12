@@ -19,6 +19,7 @@ export function createMeeting(dependencies: CreateMeetingDependencies, meetingAt
     inviteTokenHash: dependencies.tokens.hashCapability(inviteToken),
     hostTokenHash: dependencies.tokens.hashCapability(hostToken),
     participants: [],
+    confirmedParkId: null,
   };
   dependencies.repository.save(meeting);
   return {

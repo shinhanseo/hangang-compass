@@ -63,5 +63,17 @@ export function createMeetingRouter(services: ApplicationServices) {
     });
   });
 
+  router.post("/meetings/:meetingId/confirmation", (request, response) => {
+    const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
+    const requestCookies = parseCookies(request.headers.cookie);
+    const hostToken = requestCookies[`hc_host_${request.params.meetingId}`];
+    const confirmation = services.confirmMeetingPark(request.params.meetingId, hostToken, parkId);
+    if (!confirmation) {
+      response.status(403).json({ error: "confirmation_denied" });
+      return;
+    }
+    response.json(confirmation);
+  });
+
   return router;
 }

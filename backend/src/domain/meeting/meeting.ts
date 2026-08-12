@@ -10,4 +10,5 @@ export interface Meeting {
   inviteTokenHash: string;
   hostTokenHash: string;
   participants: Participant[];
+  confirmedParkId: string | null;
 }

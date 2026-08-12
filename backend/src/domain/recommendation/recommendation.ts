@@ -93,6 +93,7 @@ export interface RecommendationResult {
   stage: RecommendationStage;
   recommended: EvaluatedCandidate | null;
   alternative: EvaluatedCandidate | null;
+  ranked: EvaluatedCandidate[];
   excluded: EvaluatedCandidate[];
   nearTie: boolean;
   comparison: {
@@ -337,6 +338,7 @@ export function recommend(
       stage: input.stage,
       recommended: null,
       alternative: null,
+      ranked: eligible,
       excluded,
       nearTie: false,
       comparison: null,
@@ -351,6 +353,7 @@ export function recommend(
     stage: input.stage,
     recommended,
     alternative,
+    ranked: eligible,
     excluded,
     nearTie: (alternative.penalties.total ?? Infinity) - (recommended.penalties.total ?? Infinity) <= 3,
     comparison: buildComparison(recommended, alternative),

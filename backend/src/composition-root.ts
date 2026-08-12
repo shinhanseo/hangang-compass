@@ -1,4 +1,5 @@
 import { createMeeting } from "./application/use-cases/create-meeting.js";
+import { confirmMeetingPark } from "./application/use-cases/confirm-meeting-park.js";
 import { getHostMeeting } from "./application/use-cases/get-host-meeting.js";
 import { getPublicMeeting } from "./application/use-cases/get-public-meeting.js";
 import { joinMeeting } from "./application/use-cases/join-meeting.js";
@@ -19,6 +20,8 @@ export function createApplicationServices() {
       joinMeeting(repository, tokens, recommendations, input),
     hostMeeting: (meetingId: string, hostToken: string | undefined) =>
       getHostMeeting(repository, tokens, recommendations, meetingId, hostToken),
+    confirmMeetingPark: (meetingId: string, hostToken: string | undefined, parkId: string) =>
+      confirmMeetingPark(repository, tokens, recommendations, meetingId, hostToken, parkId),
   };
 }
 
