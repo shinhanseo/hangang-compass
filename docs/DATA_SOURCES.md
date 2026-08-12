@@ -33,11 +33,14 @@
 - 시각화/설명 페이지: <https://data.seoul.go.kr/dataVisual/seoul/guide.do>
 - Open API 이용안내: <https://data.seoul.go.kr/together/guide/useGuide.do>
 - 2026-07-22 인구데이터 품질 오류 공지: <https://data.seoul.go.kr/together/notice/datasetNoticeView.do?bbsCd=10008&ditcCd=&pageIndex=1&seq=80d6f0ee7267f416f3f199e85d4da68e>
+- 미래한강본부 관리 공원 11곳 안내: <https://hangang.seoul.go.kr/www/contents/964.do?mid=933>
+- 노들섬 별도 운영시간 안내: <https://nodeul.org/qna/>
 
 ### 확인된 범위
 
 - 11개 한강공원 모두 주요 장소 목록에 포함된다.
   - 강서, 광나루, 난지, 여의도, 잠원, 양화, 뚝섬, 망원, 반포, 이촌, 잠실
+- 노들섬은 한강에 있지만 미래한강본부가 관리하는 11개 한강공원에는 포함되지 않고 별도 조례·운영시간을 둔 복합문화공간으로 운영된다. 현재 한강공원 후보와 같은 데이터 계약에 임의로 섞지 않으며, 향후 추가할 때는 운영시간과 노들섬 단위 혼잡 데이터 가용성을 별도로 검증한다.
 - 한 장소 단위로 인구 혼잡, 교통, 날씨/환경, 문화행사 등을 통합 조회한다.
 - API는 한 번에 한 장소만 호출한다.
 - 실시간 인구는 5분, 날씨/환경은 10분, 문화행사는 1일 주기로 안내된다. 세부 원천별 주기는 다를 수 있다.

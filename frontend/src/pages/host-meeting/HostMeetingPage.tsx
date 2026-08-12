@@ -7,6 +7,7 @@ import type { HostMeeting, MeetingPoll, OriginPlace, ParkResult } from "../../sh
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { navigate } from "../../shared/lib/navigation";
+import { RANDOM_DRAW_FRAME_DELAYS, randomDrawFrames } from "../../shared/lib/random-draw";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
 import { forgetRecentMeeting, rememberRecentMeeting } from "../../shared/lib/recent-meetings";
 import { shareInviteToKakao, sharePollToKakao } from "../../shared/lib/share-invite";
@@ -35,6 +36,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [deletionError, setDeletionError] = useState("");
   const [pollBusy, setPollBusy] = useState(false);
   const [pollError, setPollError] = useState("");
+  const [randomDraw, setRandomDraw] = useState<{ currentName: string; winnerName: string; phase: "drawing" | "winner" } | null>(null);
   const previousResult = useRef<HostMeeting["result"]>(null);
 
   async function refresh() {
@@ -248,6 +250,38 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
     }
   }
 
+  async function randomizePoll() {
+    const currentPoll = data!.meeting.poll;
+    if (!currentPoll || currentPoll.status !== "tied") return;
+    setPollBusy(true);
+    setPollError("");
+    try {
+      const response = await api<{ poll: MeetingPoll }>(`/api/meetings/${meetingId}/poll/random`, { method: "POST" });
+      const winner = response.poll.candidateLabels.find((candidate) => candidate.parkId === response.poll.winnerParkId);
+      if (!winner || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        updatePoll(response.poll);
+        return;
+      }
+      const candidateNames = currentPoll.candidateLabels
+        .filter((candidate) => currentPoll.candidateParkIds.includes(candidate.parkId))
+        .map((candidate) => candidate.parkName);
+      const frames = randomDrawFrames(candidateNames, winner.parkName);
+      setRandomDraw({ currentName: frames[0]!, winnerName: winner.parkName, phase: "drawing" });
+      for (let index = 1; index < frames.length; index += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, RANDOM_DRAW_FRAME_DELAYS[index - 1] ?? 300));
+        setRandomDraw({ currentName: frames[index]!, winnerName: winner.parkName, phase: index === frames.length - 1 ? "winner" : "drawing" });
+      }
+      updatePoll(response.poll);
+      await new Promise((resolve) => window.setTimeout(resolve, 850));
+      setRandomDraw(null);
+    } catch {
+      setRandomDraw(null);
+      setPollError("랜덤 추첨을 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.");
+    } finally {
+      setPollBusy(false);
+    }
+  }
+
   async function confirmPollWinner() {
     setPollBusy(true);
     setPollError("");
@@ -268,6 +302,16 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
 
   return (
     <main className="shell app-screen host-screen">
+      {randomDraw && <div className={`random-draw-layer ${randomDraw.phase}`} role="dialog" aria-modal="true" aria-labelledby="random-draw-title">
+        <div className="random-draw-card">
+          <div className="random-draw-orbit" aria-hidden="true"><i /><i /><i /></div>
+          <p>동률 후보 랜덤 추첨</p>
+          <h2 id="random-draw-title">{randomDraw.phase === "drawing" ? "어디로 가게 될까요?" : "여기로 정해졌어요"}</h2>
+          <strong key={`${randomDraw.phase}-${randomDraw.currentName}`}>{randomDraw.currentName}</strong>
+          <small>{randomDraw.phase === "drawing" ? "후보를 섞고 있어요" : "방장이 한 번 더 확인하면 최종 확정돼요"}</small>
+          {randomDraw.phase === "winner" && <span className="sr-only" role="status">{randomDraw.winnerName}이 랜덤으로 선택됐어요.</span>}
+        </div>
+      </div>}
       <MobileAppBar action={<button className="icon-button" aria-label="새로고침" onClick={() => void refresh()}><AppIcon name="refresh" /></button>} />
       <section className="meeting-hero">
         <div className="host-status"><span>방장</span><span className="status-dot" />{data.meeting.participantCount < 2 ? "최소 인원 대기 중" : `${data.meeting.participantCount}명으로 추천 중`}</div>
@@ -339,7 +383,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
           onShare={() => void sharePoll()}
           onClose={() => void pollAction("/close")}
           onRestart={() => void pollAction("/restart")}
-          onRandom={() => void pollAction("/random")}
+          onRandom={() => void randomizePoll()}
           onConfirmWinner={() => void confirmPollWinner()}
         />
         {pollError && <p className="error poll-error" role="alert">{pollError}</p>}

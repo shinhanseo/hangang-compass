@@ -363,6 +363,19 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .poll-winner small { color: var(--olive); font-size: 9px; font-weight: 750; }
 .poll-winner strong { font-size: 20px; letter-spacing: -.04em; }
 .poll-error { margin: -2px 3px 8px; }
+.random-draw-layer { position: fixed; z-index: 80; display: grid; inset: 0; padding: 24px; place-items: center; background: rgb(32 35 20 / 72%); backdrop-filter: blur(8px); }
+.random-draw-card { position: relative; display: flex; width: min(330px, 100%); min-height: 330px; overflow: hidden; padding: 34px 24px; border-radius: 28px; align-items: center; justify-content: center; flex-direction: column; color: white; text-align: center; background: var(--forest); box-shadow: 0 28px 80px rgb(20 22 12 / 38%); }
+.random-draw-card > p { position: relative; margin: 0 0 11px; color: var(--lime); font-size: 10px; font-weight: 850; letter-spacing: .08em; }
+.random-draw-card > h2 { position: relative; margin: 0; font-size: 22px; letter-spacing: -.04em; }
+.random-draw-card > strong { position: relative; margin-top: 34px; font-size: 29px; font-weight: 900; letter-spacing: -.055em; animation: random-name-in .22s ease-out both; }
+.random-draw-card > small { position: relative; margin-top: 13px; color: rgb(255 255 255 / 58%); font-size: 10px; }
+.random-draw-orbit { position: absolute; width: 250px; height: 250px; border: 1px solid rgb(212 222 149 / 24%); border-radius: 50%; animation: random-orbit 2.4s linear infinite; }
+.random-draw-orbit::before, .random-draw-orbit::after { position: absolute; border: 1px solid rgb(212 222 149 / 16%); border-radius: 50%; content: ""; inset: 28px; }.random-draw-orbit::after { inset: 63px; }
+.random-draw-orbit i { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgb(212 222 149 / 8%); }.random-draw-orbit i:nth-child(1) { top: 25px; right: 38px; }.random-draw-orbit i:nth-child(2) { right: -4px; bottom: 92px; }.random-draw-orbit i:nth-child(3) { bottom: 19px; left: 48px; }
+.random-draw-layer.winner .random-draw-card { animation: random-winner .5s ease-out both; }.random-draw-layer.winner .random-draw-card > strong { color: var(--lime); }.random-draw-layer.winner .random-draw-orbit { animation-duration: 5s; }
+@keyframes random-name-in { from { opacity: 0; transform: translateY(7px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes random-orbit { to { transform: rotate(360deg); } }
+@keyframes random-winner { 50% { box-shadow: 0 28px 80px rgb(20 22 12 / 38%), 0 0 0 8px rgb(212 222 149 / 10%); } }
 .result > .crowd-overview { margin: 24px 0 12px; color: var(--ink); border: 1px solid var(--line); background: white; box-shadow: none; }
 .result > .crowd-overview .crowd-overview-heading p { color: var(--olive); }
 .result > .crowd-overview .crowd-overview-heading time, .result > .crowd-overview .crowd-legend, .result > .crowd-overview .crowd-bars li > strong, .result > .crowd-overview .crowd-park-name { color: var(--muted); }
