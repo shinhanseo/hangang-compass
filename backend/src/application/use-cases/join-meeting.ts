@@ -4,6 +4,7 @@ import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
 import type { OriginPlaceProvider } from "../ports/origin-place-provider.js";
 import { addMeetingParticipant } from "../services/add-meeting-participant.js";
+import type { TravelMode } from "../../domain/meeting/meeting.js";
 
 export interface JoinMeetingInput {
   inviteToken: string;
@@ -12,6 +13,7 @@ export interface JoinMeetingInput {
   originPlaceName: string;
   destinationPlaceId?: string;
   destinationPlaceName?: string;
+  travelMode: TravelMode;
 }
 
 export async function joinMeeting(

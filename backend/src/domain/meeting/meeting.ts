@@ -2,6 +2,7 @@ export interface Participant {
   id: string;
   alias: string;
   role?: "host" | "guest";
+  travelMode?: TravelMode;
   capabilityTokenHash?: string;
   origin: {
     placeId: string;
@@ -12,6 +13,8 @@ export interface Participant {
     placeName: string;
   } | null;
 }
+
+export type TravelMode = "public_transit" | "car";
 
 export interface MeetingPoll {
   round: number;

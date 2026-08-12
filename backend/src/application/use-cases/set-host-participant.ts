@@ -5,6 +5,7 @@ import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { OriginPlaceProvider } from "../ports/origin-place-provider.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
 import { isAuthorizedHost } from "../services/authorize-host.js";
+import type { TravelMode } from "../../domain/meeting/meeting.js";
 
 export async function setHostParticipant(
   repository: MeetingRepository,
@@ -19,6 +20,7 @@ export async function setHostParticipant(
     originPlaceName: string;
     destinationPlaceId?: string;
     destinationPlaceName?: string;
+    travelMode: TravelMode;
   },
 ) {
   const meeting = await repository.findById(input.meetingId);

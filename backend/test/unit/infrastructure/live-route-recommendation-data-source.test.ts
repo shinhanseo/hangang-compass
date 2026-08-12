@@ -82,3 +82,18 @@ test("shared-origin preparation deduplicates the common outbound and keeps direc
   assert.deepEqual(candidate?.routes.map((route) => route.minutes), [20, 20]);
   assert.deepEqual(candidate?.returnRoutes?.map((route) => route.minutes), [35, 35]);
 });
+
+test("mixed transport compares transit with driving plus parking walk without a multiplier", async () => {
+  const transit: TransitRouteProvider = { routeFor: async () => ({ status: "available", route: { totalMinutes: 31, transfers: 1, fareWon: 1_500, walkingMinutes: 4, calculatedAt: "2026-08-12T05:00:00.000Z", source: "kakao_public_transit" } }) };
+  const driving: TransitRouteProvider = { routeFor: async () => ({ status: "available", route: { totalMinutes: 18, transfers: null, fareWon: null, walkingMinutes: null, tollWon: 0, calculatedAt: "2026-08-12T05:01:00.000Z", source: "kakao_driving" } }) };
+  const walking: TransitRouteProvider = { routeFor: async () => ({ status: "available", route: { totalMinutes: 6, transfers: null, fareWon: null, walkingMinutes: 6, calculatedAt: "2026-08-12T05:02:00.000Z", source: "kakao_walking" } }) };
+  const source = new LiveRouteRecommendationDataSource(new FakeRecommendationDataSource(), transit, new FakeOriginPlaceProvider(), { drivingRoutes: driving, walkingRoutes: walking });
+  const participants = [
+    { id: "p1", alias: "버스", travelMode: "public_transit" as const, origin: { placeId: "hongdae", placeName: "홍대입구역" } },
+    { id: "p2", alias: "차", travelMode: "car" as const, origin: { placeId: "gangnam", placeName: "강남역" } },
+  ];
+  await source.prepareFor(participants, "2026-08-13T05:00:00.000Z");
+  const candidate = source.candidates(participants, "2026-08-13T05:00:00.000Z").find((item) => item.parkId === "yeouido");
+  assert.deepEqual(candidate?.routes.map((route) => route.minutes), [31, 24]);
+  assert.equal(source.travelData(participants).source, "kakao_mixed");
+});

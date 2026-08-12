@@ -3,7 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { RecommendationResult } from "../../features/recommendation/RecommendationResult";
 import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
-import type { MeetingPoll, OriginPlace, RecommendationResult as Recommendation } from "../../shared/api/contracts";
+import { TravelModeSelector } from "../../features/travel-mode/TravelModeSelector";
+import type { MeetingPoll, OriginPlace, RecommendationResult as Recommendation, TravelMode } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
@@ -15,6 +16,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [alias, setAlias] = useState("");
   const [origin, setOrigin] = useState<OriginPlace | null>(null);
   const [destination, setDestination] = useState<OriginPlace | null>(null);
+  const [travelMode, setTravelMode] = useState<TravelMode>("public_transit");
   const [result, setResult] = useState<Recommendation | null>(null);
   const [count, setCount] = useState(0);
   const [error, setError] = useState("");
@@ -109,6 +111,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
           originPlaceName: origin?.name,
           destinationPlaceId: destination?.id,
           destinationPlaceName: destination?.name,
+          travelMode,
         }),
       });
       setCount(joined.participantCount);
@@ -181,6 +184,10 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
         onSelect={selectOrigin}
       />}
       {sharedOrigin && <PlaceSearchField searchPath={`/api/invites/${inviteToken}/places`} id="destination-place" label="약속 후 각자 이동할 장소" help="귀가할 집 주소가 아니라 가까운 공개 장소를 선택해 주세요." selected={destination} onSelect={setDestination} />}
+      </section>
+      <section className="form-section">
+        <div className="section-title"><span>3</span><div><h2>이동 방법을 골라주세요</h2><p>각자 실제로 이용할 방법으로 시간을 비교해요.</p></div></div>
+        <TravelModeSelector value={travelMode} onChange={setTravelMode} />
       </section>
       {error && <p className="error">{error}</p>}
       <p className="privacy-card"><span><AppIcon name="lock" size={18} /></span><span><strong>내 이동 장소는 나만 알아요</strong><small>방장과 다른 친구에게 공개되지 않습니다.</small></span></p>

@@ -13,7 +13,7 @@ import { LiveRouteRecommendationDataSource } from "./infrastructure/providers/ka
 import { InMemoryMeetingRepository } from "./infrastructure/persistence/in-memory-meeting-repository.js";
 import { NodeCapabilityTokenService } from "./infrastructure/security/node-capability-token-service.js";
 import { FakeOriginPlaceProvider } from "./infrastructure/providers/fake/fake-origin-place-provider.js";
-import type { TravelPattern } from "./domain/meeting/meeting.js";
+import type { TravelMode, TravelPattern } from "./domain/meeting/meeting.js";
 import { setSharedOrigin } from "./application/use-cases/set-shared-origin.js";
 import { setHostParticipant } from "./application/use-cases/set-host-participant.js";
 import { createHostRecoveryLink } from "./application/use-cases/create-host-recovery-link.js";
@@ -27,6 +27,8 @@ import { closeMeetingPoll, confirmMeetingPollWinner, getHostMeetingPoll, getPubl
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
   routeProvider?: TransitRouteProvider;
+  drivingRouteProvider?: TransitRouteProvider;
+  walkingRouteProvider?: TransitRouteProvider;
   originPlaceProvider?: OriginPlaceProvider;
   meetingRepository?: MeetingRepository;
 } = {}) {
@@ -39,7 +41,10 @@ export function createApplicationServices(options: {
     ? new LiveCrowdRecommendationDataSource(fakeRecommendations, options.crowdProvider)
     : fakeRecommendations;
   const recommendations = options.routeProvider
-    ? new LiveRouteRecommendationDataSource(crowdRecommendations, options.routeProvider, origins)
+    ? new LiveRouteRecommendationDataSource(crowdRecommendations, options.routeProvider, origins, {
+        drivingRoutes: options.drivingRouteProvider,
+        walkingRoutes: options.walkingRouteProvider,
+      })
     : crowdRecommendations;
 
   return {
@@ -47,7 +52,7 @@ export function createApplicationServices(options: {
     createMeeting: (meetingAt: string, travelPattern: TravelPattern) => createMeeting({ repository, tokens, recommendations }, meetingAt, travelPattern),
     publicMeeting: (inviteToken: string) => getPublicMeeting(repository, tokens, inviteToken),
     publicRecommendation: (inviteToken: string) => getPublicRecommendation(repository, tokens, recommendations, inviteToken),
-    joinMeeting: (input: { inviteToken: string; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string }) =>
+    joinMeeting: (input: { inviteToken: string; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string; travelMode: TravelMode }) =>
       joinMeeting(repository, tokens, recommendations, origins, input),
     hostMeeting: (meetingId: string, hostToken: string | undefined) =>
       getHostMeeting(repository, tokens, recommendations, meetingId, hostToken),
@@ -55,7 +60,7 @@ export function createApplicationServices(options: {
       getHostAccessSummary(repository, tokens, meetingId, hostToken),
     setSharedOrigin: (input: { meetingId: string; hostToken: string | undefined; placeId: string; placeName: string }) =>
       setSharedOrigin(repository, tokens, origins, input),
-    setHostParticipant: (input: { meetingId: string; hostToken: string | undefined; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string }) =>
+    setHostParticipant: (input: { meetingId: string; hostToken: string | undefined; alias: string; originPlaceId: string; originPlaceName: string; destinationPlaceId?: string; destinationPlaceName?: string; travelMode: TravelMode }) =>
       setHostParticipant(repository, tokens, recommendations, origins, input),
     confirmMeetingPark: (meetingId: string, hostToken: string | undefined, parkId: string) =>
       confirmMeetingPark(repository, tokens, recommendations, meetingId, hostToken, parkId),

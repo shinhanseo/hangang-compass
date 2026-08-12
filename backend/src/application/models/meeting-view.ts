@@ -1,6 +1,6 @@
 import type { TravelMetrics } from "../../domain/recommendation/recommendation.js";
 import type { ParkExperience } from "../../domain/park/park-experience.js";
-import type { TravelPattern } from "../../domain/meeting/meeting.js";
+import type { TravelMode, TravelPattern } from "../../domain/meeting/meeting.js";
 
 export type CandidateRole = "recommended" | "travel_alternative" | "experience_alternative";
 
@@ -11,7 +11,7 @@ export interface ParkResultView {
   meetingPoint: string;
   travel: TravelMetrics;
   returnTravel: TravelMetrics | null;
-  participantTimes: Array<{ alias: string; minutes: number; returnMinutes: number | null }>;
+  participantTimes: Array<{ alias: string; travelMode: TravelMode; minutes: number; returnMinutes: number | null }>;
   arrivalCrowd: {
     level: "relaxed" | "normal" | "busy" | "very_busy" | null;
     label: string;
@@ -29,6 +29,7 @@ export interface ParkResultView {
 
 export interface RecommendationResultView {
   travelPattern: TravelPattern;
+  travelModes: { publicTransit: number; car: number };
   stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResultView;
   alternatives: [ParkResultView, ParkResultView];
@@ -48,7 +49,7 @@ export interface RecommendationResultView {
     }>;
   };
   travelData: {
-    source: "fake" | "kakao_public_transit";
+    source: "fake" | "kakao_public_transit" | "kakao_car" | "kakao_mixed";
     calculatedAt: string | null;
   };
 }
@@ -60,7 +61,7 @@ export interface HostMeetingView {
   sharedOriginName: string | null;
   hostParticipantSubmitted: boolean;
   participantCount: number;
-  participants: Array<{ alias: string; isHost: boolean }>;
+  participants: Array<{ alias: string; isHost: boolean; travelMode: TravelMode }>;
   result: RecommendationResultView | null;
   recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;

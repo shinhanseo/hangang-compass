@@ -7,6 +7,8 @@ import { CachedCrowdDataProvider } from "./infrastructure/providers/cached-crowd
 import { CachedTransitRouteProvider } from "./infrastructure/providers/cached-transit-route-provider.js";
 import { KakaoTransitRouteProvider } from "./infrastructure/providers/kakao/kakao-transit-route-provider.js";
 import { KakaoOriginPlaceProvider } from "./infrastructure/providers/kakao/kakao-origin-place-provider.js";
+import { KakaoDrivingRouteProvider } from "./infrastructure/providers/kakao/kakao-driving-route-provider.js";
+import { KakaoWalkingRouteProvider } from "./infrastructure/providers/kakao/kakao-walking-route-provider.js";
 import { SeoulCitydataCrowdProvider } from "./infrastructure/providers/seoul/seoul-citydata-crowd-provider.js";
 import { createApp } from "./presentation/http/app.js";
 import { SqliteMeetingRepository } from "./infrastructure/persistence/sqlite-meeting-repository.js";
@@ -34,10 +36,29 @@ const routeProvider = kakaoApiKey
       maxRequestsPerDay: 900,
     })
   : undefined;
+const drivingRouteProvider = kakaoApiKey
+  ? new CachedTransitRouteProvider(new KakaoDrivingRouteProvider({ apiKey: kakaoApiKey }), {
+      ttlMs: 2 * 60 * 60_000,
+      maxRequestsPerDay: 9_000,
+    })
+  : undefined;
+const walkingRouteProvider = kakaoApiKey
+  ? new CachedTransitRouteProvider(new KakaoWalkingRouteProvider({ apiKey: kakaoApiKey }), {
+      ttlMs: 2 * 60 * 60_000,
+      maxRequestsPerDay: 900,
+    })
+  : undefined;
 const originPlaceProvider = kakaoApiKey
   ? new KakaoOriginPlaceProvider({ apiKey: kakaoApiKey })
   : undefined;
-const app = createApp(createApplicationServices({ crowdProvider, routeProvider, originPlaceProvider, meetingRepository }));
+const app = createApp(createApplicationServices({
+  crowdProvider,
+  routeProvider,
+  drivingRouteProvider,
+  walkingRouteProvider,
+  originPlaceProvider,
+  meetingRepository,
+}));
 
 app.listen(port, "127.0.0.1", () => {
   console.log(JSON.stringify({ event: "api_started", port }));

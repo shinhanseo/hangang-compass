@@ -11,7 +11,7 @@ export interface RecommendationDataSource {
   meetingPointFor(parkId: string): string;
   experienceFor(parkId: string): ParkExperience;
   travelData(participants: Participant[]): {
-    source: "fake" | "kakao_public_transit";
+    source: "fake" | "kakao_public_transit" | "kakao_car" | "kakao_mixed";
     calculatedAt: string | null;
   };
   arrivalCrowdFor(parkId: string, meetingAt: string): {

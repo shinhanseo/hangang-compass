@@ -12,7 +12,7 @@ export interface ParkResult {
   meetingPoint: string;
   travel: { averageMinutes: number; maximumMinutes: number; rangeMinutes: number };
   returnTravel: { averageMinutes: number; maximumMinutes: number; rangeMinutes: number } | null;
-  participantTimes: Array<{ alias: string; minutes: number; returnMinutes: number | null }>;
+  participantTimes: Array<{ alias: string; travelMode: TravelMode; minutes: number; returnMinutes: number | null }>;
   arrivalCrowd: {
     level: "relaxed" | "normal" | "busy" | "very_busy" | null;
     label: string;
@@ -36,6 +36,7 @@ export interface ParkResult {
 
 export interface RecommendationResult {
   travelPattern: "shared_origin" | "individual_round_trip";
+  travelModes: { publicTransit: number; car: number };
   stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResult;
   alternatives: [ParkResult, ParkResult];
@@ -55,7 +56,7 @@ export interface RecommendationResult {
   };
   nearTie: boolean;
   travelData: {
-    source: "fake" | "kakao_public_transit";
+    source: "fake" | "kakao_public_transit" | "kakao_car" | "kakao_mixed";
     calculatedAt: string | null;
   };
 }
@@ -81,9 +82,10 @@ export interface HostMeeting {
   sharedOriginName: string | null;
   hostParticipantSubmitted: boolean;
   participantCount: number;
-  participants: Array<{ alias: string; isHost: boolean }>;
+  participants: Array<{ alias: string; isHost: boolean; travelMode: TravelMode }>;
   result: RecommendationResult | null;
   recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;
   poll: MeetingPoll | null;
 }
+export type TravelMode = "public_transit" | "car";

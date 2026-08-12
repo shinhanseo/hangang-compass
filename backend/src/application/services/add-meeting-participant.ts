@@ -13,6 +13,7 @@ export async function addMeetingParticipant(
     originPlaceName: string;
     destinationPlaceId?: string;
     destinationPlaceName?: string;
+    travelMode: NonNullable<Participant["travelMode"]>;
   },
 ): Promise<Participant | null> {
   const requestedOrigin = meeting.travelPattern === "shared_origin"
@@ -32,6 +33,6 @@ export async function addMeetingParticipant(
     role: input.role,
     origin: { placeId: origin.id, placeName: origin.name },
     destination: { placeId: destination.id, placeName: destination.name },
+    travelMode: input.travelMode,
   };
 }
-

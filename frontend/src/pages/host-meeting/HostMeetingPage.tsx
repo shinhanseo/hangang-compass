@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { RecommendationResult } from "../../features/recommendation/RecommendationResult";
 import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
-import type { HostMeeting, MeetingPoll, OriginPlace, ParkResult } from "../../shared/api/contracts";
+import { TravelModeSelector } from "../../features/travel-mode/TravelModeSelector";
+import type { HostMeeting, MeetingPoll, OriginPlace, ParkResult, TravelMode } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { navigate } from "../../shared/lib/navigation";
@@ -23,6 +24,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [savingOrigin, setSavingOrigin] = useState(false);
   const [originError, setOriginError] = useState("");
   const [hostPlace, setHostPlace] = useState<OriginPlace | null>(null);
+  const [hostTravelMode, setHostTravelMode] = useState<TravelMode>("public_transit");
   const [savingHostPlace, setSavingHostPlace] = useState(false);
   const [hostPlaceError, setHostPlaceError] = useState("");
   const [sharing, setSharing] = useState(false);
@@ -193,6 +195,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
           originPlaceName: sharedOriginPattern ? undefined : hostPlace.name,
           destinationPlaceId: sharedOriginPattern ? hostPlace.id : undefined,
           destinationPlaceName: sharedOriginPattern ? hostPlace.name : undefined,
+          travelMode: hostTravelMode,
         }),
       });
       setData((current) => current ? { ...current, meeting: result.meeting } : current);
@@ -354,6 +357,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
           selected={hostPlace}
           onSelect={setHostPlace}
         />
+        <TravelModeSelector value={hostTravelMode} onChange={setHostTravelMode} />
         <p className="privacy-line host-privacy"><AppIcon name="lock" size={15} />이 장소는 친구들에게 공개되지 않아요.</p>
         <button className="primary-action" onClick={() => void saveHostPlace()} disabled={!hostPlace || savingHostPlace}>{savingHostPlace ? "내 장소를 저장하는 중…" : "내 이동 장소 저장하기"}</button>
         {hostPlaceError && <p className="error">{hostPlaceError}</p>}
@@ -369,7 +373,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
         <div className="inline-actions">
           {data.invitePath && !setupIncomplete && <a className="text-action" href={data.invitePath} target="_blank" rel="noreferrer">참여자 화면 미리보기 <AppIcon name="chevron" size={17} /></a>}
         </div>
-        {data.meeting.participants.length > 0 && <div className="participant-list"><p>참여 완료</p><div>{data.meeting.participants.map((item) => <span className="participant-chip" key={`${item.alias}-${item.isHost}`}><i>{item.alias.slice(0, 1)}</i>{item.alias}{item.isHost && <small>나</small>}</span>)}</div></div>}
+        {data.meeting.participants.length > 0 && <div className="participant-list"><p>참여 완료</p><div>{data.meeting.participants.map((item) => <span className="participant-chip" key={`${item.alias}-${item.isHost}`}><i>{item.alias.slice(0, 1)}</i>{item.alias}<small>{item.isHost ? "나 · " : ""}{item.travelMode === "car" ? "자가용" : "대중교통"}</small></span>)}</div></div>}
       </section>
       {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={data.meeting.poll ? undefined : (park) => void confirmPark(park)} updateNotice={recommendationUpdate} decisionPanel={(data.meeting.poll || !data.meeting.confirmedParkId) ? <>
         <MeetingPollPanel

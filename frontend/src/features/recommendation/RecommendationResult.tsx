@@ -101,7 +101,7 @@ function ResultCard({ park, stage, primary = false, confirmed = false, onConfirm
         <ul className="times">
           {park.participantTimes.map((participant) => (
             <li key={participant.alias}>
-              <span><i>{participant.alias.slice(0, 1)}</i>{participant.alias}</span>
+              <span><i>{participant.alias.slice(0, 1)}</i><span>{participant.alias}<small className="participant-mode">{participant.travelMode === "car" ? "자가용" : "대중교통"}</small></span></span>
               <strong>{participant.minutes}분{participant.returnMinutes !== null ? ` → ${participant.returnMinutes}분` : ""}</strong>
             </li>
           ))}
@@ -168,6 +168,10 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm, updat
           <div><strong>{result.stage === "live_current" ? "이동시간 + 도착 혼잡 반영" : "이동 기준 1차 추천"}</strong><small>{result.stage === "live_current" ? "서울시의 약속 시각 혼잡 예측까지 함께 계산했어요." : "약속 12시간 전부터 공식 혼잡 예측을 추가해 다시 계산해요."}</small></div>
         </div>
         <p className="mode-summary">{result.travelPattern === "shared_origin" ? "함께 출발하는 길 50% · 각자 귀가 50%로 비교했어요." : "각자 갈 때 50% · 각자 귀가 50%로 비교했어요."}</p>
+        <p className="transport-summary">{[
+          result.travelModes.publicTransit ? `대중교통 ${result.travelModes.publicTransit}명` : "",
+          result.travelModes.car ? `자가용 ${result.travelModes.car}명` : "",
+        ].filter(Boolean).join(" · ")}의 실제 경로를 비교했어요.</p>
         <p>{result.explanation}</p>
         {result.travelData.calculatedAt && <p className="data-time">카카오 경로 조회 기준 {dateTime(result.travelData.calculatedAt)}</p>}
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}

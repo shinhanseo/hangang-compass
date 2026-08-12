@@ -108,7 +108,7 @@ export async function buildRecommendationView(
         const participant = meeting.participants.find((item) => item.id === route.participantId);
         const returnRoute = candidateById.get(candidate.parkId)?.returnRoutes?.find((item) => item.participantId === route.participantId);
         return participant && route.minutes !== null
-          ? [{ alias: participant.alias, minutes: route.minutes, returnMinutes: returnRoute?.minutes ?? null }]
+          ? [{ alias: participant.alias, travelMode: participant.travelMode ?? "public_transit", minutes: route.minutes, returnMinutes: returnRoute?.minutes ?? null }]
           : [];
       }) ?? [],
       arrivalCrowd: dataSource.arrivalCrowdFor(candidate.parkId, meeting.meetingAt),
@@ -138,7 +138,11 @@ export async function buildRecommendationView(
     refreshAt: stage === "provisional" && crowdSource !== "fake"
       ? new Date(new Date(meeting.meetingAt).getTime() - 12 * 60 * 60_000).toISOString()
       : null,
-    notice: travelData.source === "kakao_public_transit"
+    notice: travelData.source === "kakao_mixed" || travelData.source === "kakao_car"
+      ? stage === "provisional"
+        ? "대중교통은 카카오 대중교통 경로, 자가용은 주차장까지의 운전과 공통 집결점까지의 도보를 합산했습니다. 지금 혼잡은 오늘 기준 참고 정보이며 약속 12시간 전부터 다시 계산합니다."
+        : "대중교통은 카카오 대중교통 경로, 자가용은 주차장까지의 운전과 공통 집결점까지의 도보를 합산했습니다. 도착 혼잡은 서울시 데이터이며 주차 대기시간은 포함하지 않습니다."
+      : travelData.source === "kakao_public_transit"
       ? stage === "provisional"
         ? "이동시간은 카카오 대중교통 경로 조회값입니다. 지금 혼잡은 오늘 기준 참고 정보이며, 약속 12시간 전부터 도착 예측을 반영해 다시 계산합니다."
         : crowdSource === "seoul_realtime_citydata"
@@ -151,6 +155,10 @@ export async function buildRecommendationView(
       basis: crowdOverviewBasis,
       referenceAt: overviewReferenceAt,
       parks: overviewParks.map(({ referenceAt: _referenceAt, ...park }) => park),
+    },
+    travelModes: {
+      publicTransit: meeting.participants.filter((participant) => (participant.travelMode ?? "public_transit") === "public_transit").length,
+      car: meeting.participants.filter((participant) => participant.travelMode === "car").length,
     },
     travelData,
   };
@@ -166,7 +174,11 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
     sharedOriginName: meeting.sharedOrigin?.placeName ?? null,
     hostParticipantSubmitted: meeting.participants.some((participant) => participant.role === "host"),
     participantCount: meeting.participants.length,
-    participants: meeting.participants.map((participant) => ({ alias: participant.alias, isHost: participant.role === "host" })),
+    participants: meeting.participants.map((participant) => ({
+      alias: participant.alias,
+      isHost: participant.role === "host",
+      travelMode: participant.travelMode ?? "public_transit",
+    })),
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const

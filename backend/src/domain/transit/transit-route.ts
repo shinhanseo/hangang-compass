@@ -12,7 +12,9 @@ export interface TransitRouteEstimate {
   fareWon: number | null;
   walkingMinutes: number | null;
   calculatedAt: string;
-  source: "kakao_public_transit";
+  tollWon?: number | null;
+  parkingWalkMinutes?: number | null;
+  source: "kakao_public_transit" | "kakao_driving" | "kakao_walking" | "kakao_car_with_parking";
 }
 
 export type TransitRouteUnavailableReason =

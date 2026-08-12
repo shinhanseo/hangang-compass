@@ -12,6 +12,11 @@ export function participantInput(body: unknown) {
   const originPlaceName = typeof candidate.originPlaceName === "string" ? candidate.originPlaceName.trim() : "";
   const destinationPlaceId = typeof candidate.destinationPlaceId === "string" ? candidate.destinationPlaceId.trim() : "";
   const destinationPlaceName = typeof candidate.destinationPlaceName === "string" ? candidate.destinationPlaceName.trim() : "";
+  const travelMode: TravelMode | null = candidate.travelMode === undefined
+    ? "public_transit"
+    : candidate.travelMode === "public_transit" || candidate.travelMode === "car"
+      ? candidate.travelMode
+      : null;
   const originValid = (originPlaceId.length === 0 && originPlaceName.length === 0)
     || (originPlaceId.length >= 1 && originPlaceId.length <= 80 && originPlaceName.length >= 1 && originPlaceName.length <= 100);
   const destinationValid = (destinationPlaceId.length === 0 && destinationPlaceName.length === 0)
@@ -19,7 +24,8 @@ export function participantInput(body: unknown) {
   return alias.length >= 1 && alias.length <= 20
     && originValid
     && destinationValid
-    ? { alias, originPlaceId, originPlaceName, destinationPlaceId, destinationPlaceName }
+    && travelMode !== null
+    ? { alias, originPlaceId, originPlaceName, destinationPlaceId, destinationPlaceName, travelMode }
     : null;
 }
 
@@ -32,3 +38,4 @@ export function placeQuery(value: unknown): string | null {
   const query = value.trim().replace(/\s+/gu, " ");
   return query.length >= 2 && query.length <= 50 ? query : null;
 }
+import type { TravelMode } from "../../domain/meeting/meeting.js";

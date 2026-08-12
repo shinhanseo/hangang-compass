@@ -425,23 +425,30 @@ test("host submits an individual travel place and counts toward recommendation",
   const hostCookie = createdResponse.headers.get("set-cookie")!;
   const created = await createdResponse.json();
 
+  const invalidMode = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host-participant`, {
+    method: "PUT",
+    headers: { cookie: hostCookie.split(";")[0]!, "content-type": "application/json" },
+    body: JSON.stringify({ alias: "방장", originPlaceId: "gangnam", originPlaceName: "강남역", travelMode: "teleport" }),
+  });
+  assert.equal(invalidMode.status, 400);
+
   const unauthorized = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host-participant`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ alias: "방장", originPlaceId: "gangnam", originPlaceName: "강남역" }),
+    body: JSON.stringify({ alias: "방장", originPlaceId: "gangnam", originPlaceName: "강남역", travelMode: "car" }),
   });
   assert.equal(unauthorized.status, 403);
 
   const submitted = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host-participant`, {
     method: "PUT",
     headers: { cookie: hostCookie.split(";")[0]!, "content-type": "application/json" },
-    body: JSON.stringify({ alias: "방장", originPlaceId: "gangnam", originPlaceName: "강남역" }),
+    body: JSON.stringify({ alias: "방장", originPlaceId: "gangnam", originPlaceName: "강남역", travelMode: "car" }),
   });
   assert.equal(submitted.status, 200);
   const submittedBody = await submitted.json();
   assert.equal(submittedBody.meeting.hostParticipantSubmitted, true);
   assert.equal(submittedBody.meeting.participantCount, 1);
-  assert.deepEqual(submittedBody.meeting.participants, [{ alias: "방장", isHost: true }]);
+  assert.deepEqual(submittedBody.meeting.participants, [{ alias: "방장", isHost: true, travelMode: "car" }]);
   assert.equal(JSON.stringify(submittedBody).includes("gangnam"), false);
 
   const duplicate = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host-participant`, {
