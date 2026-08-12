@@ -125,7 +125,6 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       </div>
       <div className="invite-river" aria-hidden="true"><i /><i /><i /></div>
     </section>
-    {publicResult && <button className="public-result-trigger" type="button" onClick={() => { setResult(publicResult); setViewingPublicResult(true); }}><span><AppIcon name="spark" /></span><span><small>친구들이 먼저 입력했어요</small><strong>현재 추천 결과 보기</strong></span><AppIcon name="chevron" /></button>}
     <form className="app-form join-form" onSubmit={submit}>
       <section className="form-section">
         <div className="section-title"><span>1</span><div><h2>누구인지 알려주세요</h2><p>친구들이 알아볼 이름이면 충분해요.</p></div></div>
@@ -147,6 +146,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       </section>
       {error && <p className="error">{error}</p>}
       <p className="privacy-card"><span><AppIcon name="lock" size={18} /></span><span><strong>내 이동 장소는 나만 알아요</strong><small>방장과 다른 친구에게 공개되지 않습니다.</small></span></p>
+      {publicResult && <button className="public-result-trigger" type="button" onClick={() => { setResult(publicResult); setViewingPublicResult(true); }}><span><AppIcon name="spark" /></span><span><small>친구들이 먼저 입력했어요</small><strong>내 장소를 넣기 전 현재 추천 보기</strong></span><AppIcon name="chevron" /></button>}
       <div className={`bottom-action join-submit-action${isSubmitting ? " submitting" : ""}`}>
         {isSubmitting && <p className="submit-progress" role="status">11개 공원의 이동시간과 혼잡도를 비교하고 있어요.</p>}
         <button

@@ -40,6 +40,16 @@ function TravelMetrics({ title, travel }: { title: string; travel: ParkResult["t
   </dl></section>;
 }
 
+function KeyMetrics({ park }: { park: ParkResult }) {
+  return <dl className="key-metrics">
+    <div><dt>갈 때 평균</dt><dd>{park.travel.averageMinutes}<small>분</small></dd></div>
+    {park.returnTravel
+      ? <div><dt>귀가 평균</dt><dd>{park.returnTravel.averageMinutes}<small>분</small></dd></div>
+      : <div><dt>가장 오래</dt><dd>{park.travel.maximumMinutes}<small>분</small></dd></div>}
+    <div className="fairness-metric"><dt>친구 간 차이 <span>공평성</span></dt><dd>{park.travel.rangeMinutes}<small>분</small></dd>{park.returnTravel && <p>귀가는 {park.returnTravel.rangeMinutes}분 차이</p>}</div>
+  </dl>;
+}
+
 const CROWD_ORDER = { very_busy: 4, busy: 3, normal: 2, relaxed: 1 } as const;
 
 function CrowdOverview({ overview }: { overview: Recommendation["crowdOverview"] }) {
@@ -82,10 +92,11 @@ function ResultCard({ park, stage, primary = false, confirmed = false, onConfirm
       </div>
       <div className="park-title"><span><AppIcon name="map" /></span><div><h2>{park.parkName}</h2><p className="meeting-point">{park.meetingPoint}</p></div></div>
       <p className="selection-reason">{park.selectionReason}</p>
-      <TravelMetrics title="갈 때" travel={park.travel} />
-      {park.returnTravel && <TravelMetrics title="약속 후" travel={park.returnTravel} />}
+      <KeyMetrics park={park} />
       <details className="result-details">
-        <summary>친구별 시간과 공원 정보 <AppIcon name="chevron" size={17} /></summary>
+        <summary>상세 이동시간과 공원 정보 <AppIcon name="chevron" size={17} /></summary>
+        <TravelMetrics title="갈 때 상세" travel={park.travel} />
+        {park.returnTravel && <TravelMetrics title="귀가 상세" travel={park.returnTravel} />}
         <ul className="times">
           {park.participantTimes.map((participant) => (
             <li key={participant.alias}>
@@ -112,6 +123,27 @@ function ResultCard({ park, stage, primary = false, confirmed = false, onConfirm
   );
 }
 
+function AlternativeCard({ park, confirmed = false, onConfirm }: {
+  park: ParkResult;
+  confirmed?: boolean;
+  onConfirm?: (park: ParkResult) => void;
+}) {
+  return <article className={`alternative-card${confirmed ? " confirmed" : ""}`}>
+    <div className="alternative-main">
+      <div><small>{ROLE_LABEL[park.role]}</small><h3>{park.parkName}</h3><p>갈 때 평균 {park.travel.averageMinutes}분{park.returnTravel ? ` · 귀가 평균 ${park.returnTravel.averageMinutes}분` : ""}</p></div>
+      <CrowdStatus crowd={park.arrivalCrowd} />
+    </div>
+    <details className="alternative-details">
+      <summary>비교 정보 보기 <AppIcon name="chevron" size={16} /></summary>
+      <p className="selection-reason">{park.selectionReason}</p>
+      <KeyMetrics park={park} />
+      <TravelMetrics title="갈 때 상세" travel={park.travel} />
+      {park.returnTravel && <TravelMetrics title="귀가 상세" travel={park.returnTravel} />}
+      {onConfirm && <button className={confirmed ? "confirmed-button" : "confirm-button primary-action"} onClick={() => onConfirm(park)} disabled={confirmed}>{confirmed ? "이 장소로 확정됨" : `${park.parkName}으로 확정`}</button>}
+    </details>
+  </article>;
+}
+
 export function RecommendationResult({ result, confirmedParkId, onConfirm, updateNotice }: {
   result: Recommendation;
   confirmedParkId?: string | null;
@@ -121,15 +153,13 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm, updat
   return (
     <section className="result" aria-live="polite">
       <div className="result-heading">
-        <p className="overline">{
-          result.travelData.source === "kakao_public_transit"
-            ? result.stage === "live_current" ? "LIVE ROUTE · LIVE CROWD" : "LIVE ROUTE · CROWD PENDING"
-            : result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"
-        }</p>
-        <CrowdOverview overview={result.crowdOverview} />
         {updateNotice && <p className="recommendation-update" role="status"><AppIcon name="spark" size={17} />{updateNotice}</p>}
-        <span className="result-spark"><AppIcon name="spark" /></span>
-        <h1>지금은 여기를<br />가장 추천해요.</h1>
+        <p className="result-kicker"><span><AppIcon name="spark" size={15} /></span>현재 추천 결과</p>
+        <h1>지금은 여기를<br />가장 추천해요</h1>
+      </div>
+      <div className="result-grid">
+        <ResultCard park={result.recommended} stage={result.stage} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
+        <section className="result-context" aria-label="추천 계산 근거">
         <div className={`calculation-status ${result.stage === "live_current" ? "current" : "provisional"}`}>
           <span><AppIcon name={result.stage === "live_current" ? "spark" : "calendar"} size={17} /></span>
           <div><strong>{result.stage === "live_current" ? "이동시간 + 도착 혼잡 반영" : "이동 기준 1차 추천"}</strong><small>{result.stage === "live_current" ? "서울시의 약속 시각 혼잡 예측까지 함께 계산했어요." : "약속 12시간 전부터 공식 혼잡 예측을 추가해 다시 계산해요."}</small></div>
@@ -138,13 +168,10 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm, updat
         <p>{result.explanation}</p>
         {result.travelData.calculatedAt && <p className="data-time">카카오 경로 조회 기준 {dateTime(result.travelData.calculatedAt)}</p>}
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}
+        </section>
+        <section className="alternatives" aria-labelledby="alternatives-title"><div className="section-heading"><h2 id="alternatives-title">다른 대안 2곳</h2><span>이동시간과 혼잡도 비교</span></div>{result.alternatives.map((park) => <AlternativeCard key={park.parkId} park={park} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />)}</section>
       </div>
-      <div className="result-grid">
-        <ResultCard park={result.recommended} stage={result.stage} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
-        {result.alternatives.map((park) => (
-          <ResultCard key={park.parkId} park={park} stage={result.stage} confirmed={confirmedParkId === park.parkId} onConfirm={onConfirm} />
-        ))}
-      </div>
+      <CrowdOverview overview={result.crowdOverview} />
       <p className="prototype-notice">{result.notice}</p>
     </section>
   );
