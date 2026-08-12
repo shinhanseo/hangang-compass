@@ -19,6 +19,7 @@ export async function confirmMeetingPark(
   const selected = candidates.find((candidate) => candidate.parkId === parkId);
   if (!selected) return null;
   meeting.confirmedParkId = selected.parkId;
+  meeting.poll = null;
   await repository.save(meeting);
   return { confirmedParkId: selected.parkId, confirmedParkName: selected.parkName };
 }

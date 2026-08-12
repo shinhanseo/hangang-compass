@@ -13,6 +13,7 @@ test("host can manage the meeting but cannot inspect participant origins", () =>
   assert.equal(can("host", "edit_meeting"), true);
   assert.equal(can("host", "remove_participant"), true);
   assert.equal(can("host", "confirm_recommendation"), true);
+  assert.equal(can("host", "vote_in_meeting_poll"), true);
   assert.equal(can("host", "delete_meeting"), true);
   assert.equal(can("host", "view_other_origin"), false);
   assert.equal(can("host", "view_own_origin"), false);
@@ -30,6 +31,7 @@ test("participant capability is limited to the participant's own origin", () => 
   assert.equal(can("participant", "view_own_origin"), true);
   assert.equal(can("participant", "edit_own_origin"), true);
   assert.equal(can("participant", "delete_own_participation"), true);
+  assert.equal(can("participant", "vote_in_meeting_poll"), true);
   assert.equal(can("participant", "view_other_origin"), false);
   assert.equal(can("participant", "remove_participant"), false);
 });

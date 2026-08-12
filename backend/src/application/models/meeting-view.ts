@@ -64,6 +64,20 @@ export interface HostMeetingView {
   result: RecommendationResultView | null;
   recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;
+  poll: MeetingPollView | null;
+}
+
+export interface MeetingPollView {
+  round: number;
+  status: "open" | "tied" | "completed";
+  candidateParkIds: string[];
+  tally: Array<{ parkId: string; count: number }>;
+  eligibleCount: number;
+  votedCount: number;
+  myVoteParkId: string | null;
+  canVote: boolean;
+  winnerParkId: string | null;
+  resolution: "vote" | "random" | null;
 }
 
 export interface PublicMeetingView {

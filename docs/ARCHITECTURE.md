@@ -92,6 +92,7 @@
 - `ConditionSnapshot`: 장소, 관측/예측 대상 시각, 혼잡·날씨·행사·통제, 최신성
 - `Recommendation`: 1순위/대안, 규칙 버전, 요소별 점수, 제외 사유, 신뢰 상태
 - `RecommendationRevision`: `provisional` 또는 `current` 단계, 이전 결과 참조, 변경 요약, 방장 승인 상태
+- `MeetingPoll`: 투표 시작 당시 후보 3곳의 식별자·표시명, 차수, 참여자별 현재 1표, 동률 후보, 투표/랜덤 결정 방식
 
 정확한 출발지 원문과 추천 재현에 필요한 정규화 값의 보관 범위는 개인정보 검토 후 결정한다.
 
@@ -122,6 +123,8 @@
 프론트엔드는 Supabase Data API에 직접 접근하지 않는다. Express API만 서버 전용 `DATABASE_URL`로 연결하므로 Supabase Auth·Realtime·Storage와 공개 service-role 키는 현재 범위에 포함하지 않는다. IPv4 장기 실행 서버는 Session pooler, 서버리스는 Transaction pooler를 사용한다. 무료 프로젝트의 저활동 일시 정지와 자동 백업 부재를 MVP 제한으로 기록하고, 유료 전환은 자동으로 수행하지 않는다.
 
 같은 브라우저는 `localStorage`에 최근 약속의 ID와 시각만 최대 5개 저장하고 HttpOnly 방장 쿠키로 실제 권한을 검증한다. 다른 기기 복구 링크는 256비트 방장·초대 capability를 URL fragment에 담는다. 복구 화면이 fragment를 읽어 서버에서 해시를 검증하고 쿠키를 발급한 뒤 즉시 URL을 정리한다. 방장 화면은 필요할 때만 새 복구 링크를 만들며 활성 capability 수를 제한한다.
+
+게스트가 장소 제출을 완료하면 해당 초대 API 경로로 제한된 HttpOnly 참여자 capability 쿠키를 발급한다. 서버에는 해시만 참여자와 연결해 저장하며 투표 API는 이 capability 또는 방장 capability로 1인 1표를 판정한다. 투표는 추천 엔진 입력이나 순위를 변경하지 않고, 시작 당시 추천 1곳·대안 2곳을 스냅샷으로 저장하는 별도 약속 상태다. 랜덤 동률 해소는 application port 뒤의 암호학적 난수 구현을 사용해 테스트에서 결정적으로 대체할 수 있게 한다.
 
 ### 경계 원칙
 

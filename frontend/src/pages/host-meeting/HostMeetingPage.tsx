@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
 import { RecommendationResult } from "../../features/recommendation/RecommendationResult";
+import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
-import type { HostMeeting, OriginPlace, ParkResult } from "../../shared/api/contracts";
+import type { HostMeeting, MeetingPoll, OriginPlace, ParkResult } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { navigate } from "../../shared/lib/navigation";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
 import { forgetRecentMeeting, rememberRecentMeeting } from "../../shared/lib/recent-meetings";
-import { shareInviteToKakao } from "../../shared/lib/share-invite";
+import { shareInviteToKakao, sharePollToKakao } from "../../shared/lib/share-invite";
 import { AppIcon } from "../../shared/ui/AppIcon";
 import { MobileAppBar } from "../../shared/ui/MobileAppBar";
 import { ProvisionalRecommendationSheet } from "../../shared/ui/ProvisionalRecommendationSheet";
@@ -32,6 +33,8 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
   const [deletingMeeting, setDeletingMeeting] = useState(false);
   const [deletionError, setDeletionError] = useState("");
+  const [pollBusy, setPollBusy] = useState(false);
+  const [pollError, setPollError] = useState("");
   const previousResult = useRef<HostMeeting["result"]>(null);
 
   async function refresh() {
@@ -79,6 +82,13 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [data?.meeting.result?.refreshAt, meetingId]);
+  useEffect(() => {
+    if (data?.meeting.poll?.status !== "open") return;
+    const timer = window.setInterval(() => {
+      void api<{ poll: MeetingPoll }>(`/api/meetings/${meetingId}/poll`).then((response) => updatePoll(response.poll)).catch(() => undefined);
+    }, 4_000);
+    return () => window.clearInterval(timer);
+  }, [data?.meeting.poll?.status, meetingId]);
 
   if (error) return <main className="shell app-screen"><MobileAppBar /><div className="state-card"><span className="state-icon">!</span><h1>접근할 수 없어요</h1><p>{error}</p><button className="primary-action" onClick={() => navigate("/")}>새 약속 만들기</button></div></main>;
   if (!data) return <main className="shell app-screen"><MobileAppBar /><div className="loading-screen"><span /><p>약속을 불러오는 중…</p></div></main>;
@@ -205,6 +215,52 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
     }
   }
 
+  function updatePoll(poll: MeetingPoll) {
+    setData((current) => current ? { ...current, meeting: { ...current.meeting, poll } } : current);
+  }
+
+  async function pollAction(path: string, body?: { parkId: string }) {
+    setPollBusy(true);
+    setPollError("");
+    try {
+      const response = await api<{ poll: MeetingPoll }>(`/api/meetings/${meetingId}/poll${path}`, {
+        method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      updatePoll(response.poll);
+    } catch {
+      setPollError("투표 상태를 바꾸지 못했어요. 새로고침 후 다시 시도해 주세요.");
+    } finally {
+      setPollBusy(false);
+    }
+  }
+
+  async function sharePoll() {
+    if (!shareUrl) return;
+    setPollBusy(true);
+    setPollError("");
+    try {
+      await sharePollToKakao(`${shareUrl}?view=poll`, formatMeetingAt(data!.meeting.meetingAt));
+    } catch {
+      setPollError("카카오톡 투표 공유를 열지 못했어요. 초대 링크 복사를 이용해 주세요.");
+    } finally {
+      setPollBusy(false);
+    }
+  }
+
+  async function confirmPollWinner() {
+    setPollBusy(true);
+    setPollError("");
+    try {
+      const response = await api<{ confirmedParkId: string }>(`/api/meetings/${meetingId}/poll/confirm`, { method: "POST" });
+      setData((current) => current ? { ...current, meeting: { ...current.meeting, confirmedParkId: response.confirmedParkId } } : current);
+    } catch {
+      setPollError("투표 결과를 확정하지 못했어요. 새로고침 후 다시 시도해 주세요.");
+    } finally {
+      setPollBusy(false);
+    }
+  }
+
   const needsSharedOrigin = data.meeting.travelPattern === "shared_origin" && !data.meeting.sharedOriginName;
   const needsHostPlace = !data.meeting.hostParticipantSubmitted;
   const setupIncomplete = needsSharedOrigin || needsHostPlace;
@@ -271,7 +327,23 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
         </div>
         {data.meeting.participants.length > 0 && <div className="participant-list"><p>참여 완료</p><div>{data.meeting.participants.map((item) => <span className="participant-chip" key={`${item.alias}-${item.isHost}`}><i>{item.alias.slice(0, 1)}</i>{item.alias}{item.isHost && <small>나</small>}</span>)}</div></div>}
       </section>
-      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={(park) => void confirmPark(park)} updateNotice={recommendationUpdate} /> : data.meeting.recommendationStatus === "route_unavailable" ? (
+      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={data.meeting.poll ? undefined : (park) => void confirmPark(park)} updateNotice={recommendationUpdate} decisionPanel={(data.meeting.poll || !data.meeting.confirmedParkId) ? <>
+        <MeetingPollPanel
+          result={data.meeting.result}
+          poll={data.meeting.poll}
+          role="host"
+          busy={pollBusy}
+          confirmedParkId={data.meeting.confirmedParkId}
+          onStart={() => void pollAction("")}
+          onVote={(parkId) => void pollAction("/vote", { parkId })}
+          onShare={() => void sharePoll()}
+          onClose={() => void pollAction("/close")}
+          onRestart={() => void pollAction("/restart")}
+          onRandom={() => void pollAction("/random")}
+          onConfirmWinner={() => void confirmPollWinner()}
+        />
+        {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
+      </> : undefined} /> : data.meeting.recommendationStatus === "route_unavailable" ? (
         <section className="waiting-state"><span>!</span><h2>이동 경로를 확인하지 못했어요</h2><p>일부 경로를 계산하지 못했습니다. 잠시 후 위의 새로고침 버튼을 눌러주세요.</p></section>
       ) : setupIncomplete ? (
         <section className="waiting-state compact"><div className="progress-track"><i /></div><p>방장님의 이동 장소를 정하면 초대가 시작돼요.</p></section>

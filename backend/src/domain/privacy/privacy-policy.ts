@@ -9,6 +9,7 @@ export type CapabilityAction =
   | "edit_meeting"
   | "remove_participant"
   | "confirm_recommendation"
+  | "vote_in_meeting_poll"
   | "delete_meeting"
   | "view_other_origin";
 
@@ -35,6 +36,7 @@ const CAPABILITIES: Record<CapabilityRole, ReadonlySet<CapabilityAction>> = {
     "edit_own_origin",
     "delete_own_participation",
     "view_participant_aliases_and_times",
+    "vote_in_meeting_poll",
   ]),
   host: new Set([
     "view_public_meeting",
@@ -42,6 +44,7 @@ const CAPABILITIES: Record<CapabilityRole, ReadonlySet<CapabilityAction>> = {
     "edit_meeting",
     "remove_participant",
     "confirm_recommendation",
+    "vote_in_meeting_poll",
     "delete_meeting",
   ]),
 };

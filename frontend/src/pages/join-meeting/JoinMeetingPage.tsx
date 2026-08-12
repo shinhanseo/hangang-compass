@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import { RecommendationResult } from "../../features/recommendation/RecommendationResult";
+import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
-import type { OriginPlace, RecommendationResult as Recommendation } from "../../shared/api/contracts";
+import type { MeetingPoll, OriginPlace, RecommendationResult as Recommendation } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
@@ -22,6 +23,9 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [publicResult, setPublicResult] = useState<Recommendation | null>(null);
   const [viewingPublicResult, setViewingPublicResult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [poll, setPoll] = useState<MeetingPoll | null>(null);
+  const [pollBusy, setPollBusy] = useState(false);
+  const [pollError, setPollError] = useState("");
 
   useEffect(() => {
     api<{ meeting: { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } }>(`/api/invites/${inviteToken}`).then((invite) => {
@@ -29,10 +33,17 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       setCount(invite.meeting.participantCount);
       if (invite.meeting.participantCount >= 2) {
         void api<{ result: Recommendation }>(`/api/invites/${inviteToken}/recommendation`)
-          .then((response) => setPublicResult(response.result))
+          .then((response) => {
+            setPublicResult(response.result);
+            if (new URLSearchParams(window.location.search).get("view") === "poll") {
+              setResult(response.result);
+              setViewingPublicResult(true);
+            }
+          })
           .catch(() => undefined);
       }
     }).catch(() => setError("초대 링크가 없거나 만료됐어요."));
+    void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => undefined);
   }, [inviteToken]);
 
   useEffect(() => {
@@ -68,6 +79,13 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [inviteToken, result?.refreshAt]);
+  useEffect(() => {
+    if (!publicResult && !result) return;
+    const refreshPoll = () => void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => undefined);
+    refreshPoll();
+    const timer = window.setInterval(refreshPoll, 4_000);
+    return () => window.clearInterval(timer);
+  }, [inviteToken, Boolean(publicResult), Boolean(result)]);
 
   function selectOrigin(place: OriginPlace | null) {
     setOrigin(place);
@@ -97,6 +115,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       setResult(joined.result);
       setViewingPublicResult(false);
       setRecommendationUnavailable(joined.recommendationStatus === "route_unavailable");
+      void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => undefined);
     } catch {
       setError(meeting?.travelPattern === "shared_origin" ? "별칭과 귀가 장소를 다시 확인해 주세요." : "별칭과 출발·귀가 장소를 다시 확인해 주세요.");
     } finally {
@@ -104,11 +123,30 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
     }
   }
 
+  async function vote(parkId: string) {
+    setPollBusy(true);
+    setPollError("");
+    try {
+      const response = await api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll/vote`, {
+        method: "POST",
+        body: JSON.stringify({ parkId }),
+      });
+      setPoll(response.poll);
+    } catch {
+      setPollError("투표하지 못했어요. 장소를 제출한 브라우저인지 확인해 주세요.");
+    } finally {
+      setPollBusy(false);
+    }
+  }
+
   if (error && !meeting) return <main className="shell app-screen"><MobileAppBar /><div className="state-card"><span className="state-icon">!</span><h1>참여할 수 없어요</h1><p>{error}</p></div></main>;
   if (!meeting) return <main className="shell app-screen"><MobileAppBar /><div className="loading-screen"><span /><p>초대장을 불러오는 중…</p></div></main>;
   if (result) return <main className="shell app-screen"><MobileAppBar />
-    {viewingPublicResult && <section className="public-result-banner"><div><small>이미 진행 중인 약속이에요</small><strong>현재 추천을 먼저 보고 있어요</strong></div><button type="button" onClick={() => { setResult(null); setViewingPublicResult(false); }}>내 장소도 입력하기</button></section>}
-    <RecommendationResult result={result} updateNotice={recommendationUpdate} />
+    {viewingPublicResult && <section className="public-result-banner"><div><small>{poll ? "친구들 투표가 열렸어요" : "이미 진행 중인 약속이에요"}</small><strong>{poll ? "후보와 투표 현황을 보고 있어요" : "현재 추천을 먼저 보고 있어요"}</strong></div><button type="button" onClick={() => { setResult(null); setViewingPublicResult(false); }}>내 장소도 입력하기</button></section>}
+    <RecommendationResult result={result} updateNotice={recommendationUpdate} decisionPanel={poll ? <>
+      <MeetingPollPanel result={result} poll={poll} role="participant" busy={pollBusy} onVote={(parkId) => void vote(parkId)} />
+      {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
+    </> : undefined} />
   </main>;
   if (recommendationUnavailable) return <main className="shell app-screen"><MobileAppBar /><section className="state-card"><span className="state-icon">!</span><h1>경로를 확인하지 못했어요</h1><p>일부 참여자의 이동 경로가 없어 지금은 추천을 만들 수 없습니다. 잠시 후 방장 화면에서 다시 확인해 주세요.</p></section></main>;
 

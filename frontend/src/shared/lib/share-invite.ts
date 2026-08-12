@@ -67,3 +67,19 @@ export async function shareInviteToKakao(url: string, meetingAt: string) {
   }
 }
 
+export async function sharePollToKakao(url: string, meetingAt: string) {
+  const text = `${meetingAt} 한강 피크닉 장소를 고르는 중이에요. 추천 후보 3곳 중 가장 마음에 드는 곳에 투표해 주세요.`;
+  const key = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY?.trim();
+  if (!key) {
+    await nativeShare(url, text);
+    return "native" as const;
+  }
+  try {
+    const kakao = await kakaoSdk(key);
+    kakao.Share.sendDefault({ objectType: "text", text, link: { mobileWebUrl: url, webUrl: url }, buttonTitle: "투표하러 가기" });
+    return "kakao" as const;
+  } catch {
+    await nativeShare(url, text);
+    return "native" as const;
+  }
+}

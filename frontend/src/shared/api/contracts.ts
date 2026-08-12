@@ -60,6 +60,20 @@ export interface RecommendationResult {
   };
 }
 
+export interface MeetingPoll {
+  round: number;
+  status: "open" | "tied" | "completed";
+  candidateParkIds: string[];
+  candidateLabels: Array<{ parkId: string; parkName: string; recommended: boolean }>;
+  tally: Array<{ parkId: string; count: number }>;
+  eligibleCount: number;
+  votedCount: number;
+  myVoteParkId: string | null;
+  canVote: boolean;
+  winnerParkId: string | null;
+  resolution: "vote" | "random" | null;
+}
+
 export interface HostMeeting {
   id: string;
   meetingAt: string;
@@ -71,4 +85,5 @@ export interface HostMeeting {
   result: RecommendationResult | null;
   recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
   confirmedParkId: string | null;
+  poll: MeetingPoll | null;
 }

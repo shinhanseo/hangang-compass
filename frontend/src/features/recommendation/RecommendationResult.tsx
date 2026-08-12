@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ParkResult, RecommendationResult as Recommendation } from "../../shared/api/contracts";
 import { AppIcon } from "../../shared/ui/AppIcon";
 
@@ -144,11 +145,12 @@ function AlternativeCard({ park, confirmed = false, onConfirm }: {
   </article>;
 }
 
-export function RecommendationResult({ result, confirmedParkId, onConfirm, updateNotice }: {
+export function RecommendationResult({ result, confirmedParkId, onConfirm, updateNotice, decisionPanel }: {
   result: Recommendation;
   confirmedParkId?: string | null;
   onConfirm?: (park: ParkResult) => void;
   updateNotice?: string;
+  decisionPanel?: ReactNode;
 }) {
   return (
     <section className="result" aria-live="polite">
@@ -159,6 +161,7 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm, updat
       </div>
       <div className="result-grid">
         <ResultCard park={result.recommended} stage={result.stage} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />
+        {decisionPanel}
         <section className="result-context" aria-label="추천 계산 근거">
         <div className={`calculation-status ${result.stage === "live_current" ? "current" : "provisional"}`}>
           <span><AppIcon name={result.stage === "live_current" ? "spark" : "calendar"} size={17} /></span>

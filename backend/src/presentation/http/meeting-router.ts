@@ -69,7 +69,9 @@ export function createMeetingRouter(services: ApplicationServices) {
       response.status(400).json({ error: "join_failed" });
       return;
     }
-    response.status(201).json(joined);
+    response.cookie("hc_participant", joined.participantToken, { ...capabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
+    const { participantToken: _participantToken, meetingId: _meetingId, ...view } = joined;
+    response.status(201).json(view);
   });
 
   router.get("/meetings/:meetingId/host", async (request, response) => {
@@ -179,6 +181,59 @@ export function createMeetingRouter(services: ApplicationServices) {
       response.status(403).json({ error: "confirmation_denied" });
       return;
     }
+    response.json(confirmation);
+  });
+
+  router.post("/meetings/:meetingId/poll", async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const poll = await services.startMeetingPoll(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`]);
+    if (!poll) return void response.status(403).json({ error: "poll_start_denied" });
+    response.status(201).json({ poll });
+  });
+
+  router.get("/meetings/:meetingId/poll", async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const poll = await services.hostMeetingPoll(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`]);
+    if (!poll) return void response.status(404).json({ error: "poll_not_found" });
+    response.json({ poll });
+  });
+
+  router.get("/invites/:inviteToken/poll", async (request, response) => {
+    const poll = await services.publicMeetingPoll(request.params.inviteToken, parseCookies(request.headers.cookie).hc_participant);
+    if (!poll) return void response.status(404).json({ error: "poll_not_found" });
+    response.json({ poll });
+  });
+
+  router.post("/invites/:inviteToken/poll/vote", async (request, response) => {
+    const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
+    const poll = await services.votePublicMeetingPoll(request.params.inviteToken, parseCookies(request.headers.cookie).hc_participant, parkId);
+    if (!poll) return void response.status(403).json({ error: "poll_vote_denied" });
+    response.json({ poll });
+  });
+
+  router.post("/meetings/:meetingId/poll/vote", async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
+    const poll = await services.voteHostMeetingPoll(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`], parkId);
+    if (!poll) return void response.status(403).json({ error: "poll_vote_denied" });
+    response.json({ poll });
+  });
+
+  for (const [action, service] of [
+    ["close", services.closeMeetingPoll],
+    ["restart", services.restartMeetingPoll],
+    ["random", services.randomizeMeetingPoll],
+  ] as const) router.post(`/meetings/:meetingId/poll/${action}`, async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const poll = await service(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`]);
+    if (!poll) return void response.status(403).json({ error: `poll_${action}_denied` });
+    response.json({ poll });
+  });
+
+  router.post("/meetings/:meetingId/poll/confirm", async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const confirmation = await services.confirmMeetingPollWinner(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`]);
+    if (!confirmation) return void response.status(403).json({ error: "poll_confirmation_denied" });
     response.json(confirmation);
   });
 

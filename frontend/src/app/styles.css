@@ -337,6 +337,31 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .alternative-details summary::-webkit-details-marker { display: none; }
 .alternative-details[open] summary .app-icon { transform: rotate(90deg); }
 .alternative-details .key-metrics > div { background: #f3f3ed; }
+.poll-entry { display: grid; margin-top: 2px; padding: 18px 4px; border-top: 1px solid var(--line); grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.poll-entry h2 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.03em; }
+.poll-entry p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.poll-entry button { min-height: 40px; padding: 0 13px; border: 1px solid var(--olive); border-radius: 12px; color: var(--olive); background: transparent; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.meeting-poll { margin-top: 2px; padding: 18px 16px; border: 1px solid #cfd3ad; border-radius: 18px; background: #f6f7eb; }
+.meeting-poll header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.meeting-poll header p { margin: 0 0 4px; color: var(--olive); font-size: 9px; font-weight: 800; }
+.meeting-poll header h2 { margin: 0; font-size: 19px; letter-spacing: -.04em; }
+.meeting-poll header > strong { color: var(--olive); font-size: 11px; white-space: nowrap; }
+.poll-options { display: grid; margin-top: 15px; border-top: 1px solid #dfe1cb; }
+.poll-options button { display: flex; width: 100%; min-height: 60px; padding: 10px 4px; border: 0; border-bottom: 1px solid #dfe1cb; align-items: center; justify-content: space-between; color: var(--ink); text-align: left; background: transparent; }
+.poll-options button.selected { color: var(--forest); background: linear-gradient(90deg, rgb(212 222 149 / 35%), transparent 72%); }
+.poll-options button:disabled { opacity: 1; }
+.poll-options button > span { display: flex; flex-direction: column; gap: 3px; }
+.poll-options small { color: var(--muted); font-size: 8px; }
+.poll-options strong { font-size: 13px; }
+.poll-options b { color: var(--olive); font-size: 12px; }
+.poll-help { margin: 10px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.poll-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 15px; }
+.poll-actions > button:only-child { grid-column: 1 / -1; }
+.poll-actions .secondary-action, .poll-actions .primary-action { min-height: 48px; padding: 0 10px; border-radius: 14px; font-size: 10px; text-align: center; }
+.poll-winner { display: flex; margin-top: 15px; padding: 14px 0; border-top: 1px solid #dfe1cb; border-bottom: 1px solid #dfe1cb; flex-direction: column; gap: 4px; }
+.poll-winner small { color: var(--olive); font-size: 9px; font-weight: 750; }
+.poll-winner strong { font-size: 20px; letter-spacing: -.04em; }
+.poll-error { margin: -2px 3px 8px; }
 .result > .crowd-overview { margin: 24px 0 12px; color: var(--ink); border: 1px solid var(--line); background: white; box-shadow: none; }
 .result > .crowd-overview .crowd-overview-heading p { color: var(--olive); }
 .result > .crowd-overview .crowd-overview-heading time, .result > .crowd-overview .crowd-legend, .result > .crowd-overview .crowd-bars li > strong, .result > .crowd-overview .crowd-park-name { color: var(--muted); }

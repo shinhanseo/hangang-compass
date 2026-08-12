@@ -81,6 +81,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.match(created.invitePath, /^\/join\/[A-Za-z0-9_-]{43}$/u);
 
   const inviteToken = created.invitePath.split("/").at(-1);
+  const participantCookies: string[] = [];
   for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     const joinResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
@@ -88,6 +89,10 @@ test("create, invite, join twice, and recommend without exposing origins", async
       body: JSON.stringify({ alias, originPlaceId, originPlaceName }),
     });
     assert.equal(joinResponse.status, 201);
+    assert.equal(JSON.stringify(await joinResponse.json()).includes("participantToken"), false);
+    const participantCookie = joinResponse.headers.get("set-cookie")?.match(/hc_participant=[^;]+/u)?.[0];
+    assert.ok(participantCookie);
+    participantCookies.push(participantCookie);
   }
 
   const hostResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
@@ -147,6 +152,61 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.ok(publicRecommendation.alternatives.every((park: { participantTimes: unknown[] }) => park.participantTimes.length === 0));
   assert.equal(JSON.stringify(publicRecommendation).includes("민지"), false);
   assert.equal((await fetch(`${baseUrl}/api/invites/invalid/recommendation`)).status, 404);
+
+  const pollStartResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll`, {
+    method: "POST",
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal(pollStartResponse.status, 201);
+  const startedPoll = (await pollStartResponse.json()).poll;
+  assert.equal(startedPoll.status, "open");
+  assert.deepEqual(startedPoll.candidateParkIds, [hostView.meeting.result.recommended.parkId, ...hostView.meeting.result.alternatives.map((item: { parkId: string }) => item.parkId)]);
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll`)).status, 404);
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll`, { headers: { cookie: hostCookie.split(";")[0]! } })).status, 200);
+  assert.equal((await fetch(`${baseUrl}/api/invites/${inviteToken}/poll/vote`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ parkId: startedPoll.candidateParkIds[0] }),
+  })).status, 403);
+  for (const [index, cookie] of participantCookies.entries()) {
+    const voteResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/poll/vote`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ parkId: startedPoll.candidateParkIds[index] }),
+    });
+    assert.equal(voteResponse.status, 200);
+    assert.equal((await voteResponse.json()).poll.myVoteParkId, startedPoll.candidateParkIds[index]);
+  }
+  const participantPoll = await fetch(`${baseUrl}/api/invites/${inviteToken}/poll`, { headers: { cookie: participantCookies[0]! } });
+  const tiedParticipantPoll = (await participantPoll.json()).poll;
+  assert.equal(tiedParticipantPoll.status, "tied");
+  assert.equal(tiedParticipantPoll.canVote, false);
+  const tiedPollResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll`, { headers: { cookie: hostCookie.split(";")[0]! } });
+  assert.equal((await tiedPollResponse.json()).poll.status, "tied");
+  const restartedPollResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll/restart`, {
+    method: "POST",
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal((await restartedPollResponse.json()).poll.round, 2);
+  for (const cookie of participantCookies) {
+    await fetch(`${baseUrl}/api/invites/${inviteToken}/poll/vote`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ parkId: startedPoll.candidateParkIds[0] }),
+    });
+  }
+  const completedPollResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll`, { headers: { cookie: hostCookie.split(";")[0]! } });
+  const completedPoll = (await completedPollResponse.json()).poll;
+  assert.equal(completedPoll.status, "completed");
+  assert.equal(completedPoll.winnerParkId, startedPoll.candidateParkIds[0]);
+  assert.equal(completedPoll.resolution, "vote");
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll/confirm`, { method: "POST" })).status, 403);
+  const pollConfirmationResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/poll/confirm`, {
+    method: "POST",
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal(pollConfirmationResponse.status, 200);
+  assert.equal((await pollConfirmationResponse.json()).confirmedParkId, startedPoll.candidateParkIds[0]);
 
   const selectedParkId = hostView.meeting.result.alternatives[1].parkId;
   const confirmationResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/confirmation`, {

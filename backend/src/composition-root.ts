@@ -21,6 +21,8 @@ import { recoverHostAccess } from "./application/use-cases/recover-host-access.j
 import type { MeetingRepository } from "./application/ports/meeting-repository.js";
 import { getHostAccessSummary } from "./application/use-cases/get-host-access-summary.js";
 import { deleteMeeting } from "./application/use-cases/delete-meeting.js";
+import { NodeRandomIndexProvider } from "./infrastructure/random/node-random-index-provider.js";
+import { closeMeetingPoll, confirmMeetingPollWinner, getHostMeetingPoll, getPublicMeetingPoll, randomizeMeetingPoll, restartMeetingPoll, startMeetingPoll, voteHostMeetingPoll, votePublicMeetingPoll } from "./application/use-cases/manage-meeting-poll.js";
 
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
@@ -30,6 +32,7 @@ export function createApplicationServices(options: {
 } = {}) {
   const repository = options.meetingRepository ?? new InMemoryMeetingRepository();
   const tokens = new NodeCapabilityTokenService();
+  const random = new NodeRandomIndexProvider();
   const fakeRecommendations = new FakeRecommendationDataSource();
   const origins = options.originPlaceProvider ?? new FakeOriginPlaceProvider();
   const crowdRecommendations = options.crowdProvider
@@ -62,6 +65,15 @@ export function createApplicationServices(options: {
       recoverHostAccess(repository, tokens, meetingId, hostToken, inviteToken),
     deleteMeeting: (meetingId: string, hostToken: string | undefined) =>
       deleteMeeting(repository, tokens, meetingId, hostToken),
+    startMeetingPoll: (meetingId: string, hostToken: string | undefined) => startMeetingPoll(repository, tokens, recommendations, meetingId, hostToken),
+    publicMeetingPoll: (inviteToken: string, participantToken: string | undefined) => getPublicMeetingPoll(repository, tokens, inviteToken, participantToken),
+    hostMeetingPoll: (meetingId: string, hostToken: string | undefined) => getHostMeetingPoll(repository, tokens, meetingId, hostToken),
+    votePublicMeetingPoll: (inviteToken: string, participantToken: string | undefined, parkId: string) => votePublicMeetingPoll(repository, tokens, inviteToken, participantToken, parkId),
+    voteHostMeetingPoll: (meetingId: string, hostToken: string | undefined, parkId: string) => voteHostMeetingPoll(repository, tokens, meetingId, hostToken, parkId),
+    closeMeetingPoll: (meetingId: string, hostToken: string | undefined) => closeMeetingPoll(repository, tokens, meetingId, hostToken),
+    restartMeetingPoll: (meetingId: string, hostToken: string | undefined) => restartMeetingPoll(repository, tokens, meetingId, hostToken),
+    randomizeMeetingPoll: (meetingId: string, hostToken: string | undefined) => randomizeMeetingPoll(repository, tokens, random, meetingId, hostToken),
+    confirmMeetingPollWinner: (meetingId: string, hostToken: string | undefined) => confirmMeetingPollWinner(repository, tokens, meetingId, hostToken),
   };
 }
 

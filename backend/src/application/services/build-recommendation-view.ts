@@ -6,6 +6,7 @@ import {
 } from "../../domain/recommendation/recommendation.js";
 import type { CandidateRole, RecommendationResultView } from "../models/meeting-view.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
+import { buildMeetingPollView } from "./build-meeting-poll-view.js";
 
 export async function buildRecommendationView(
   meeting: Meeting,
@@ -157,6 +158,7 @@ export async function buildRecommendationView(
 
 export async function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource) {
   const result = await buildRecommendationView(meeting, dataSource);
+  const hostId = meeting.participants.find((participant) => participant.role === "host")?.id;
   return {
     id: meeting.id,
     meetingAt: meeting.meetingAt,
@@ -170,5 +172,6 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
       ? "waiting_for_participants" as const
       : result ? "ready" as const : "route_unavailable" as const,
     confirmedParkId: meeting.confirmedParkId,
+    poll: buildMeetingPollView(meeting, hostId),
   };
 }
