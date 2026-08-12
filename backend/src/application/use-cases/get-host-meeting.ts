@@ -3,7 +3,7 @@ import type { CapabilityTokenService } from "../ports/capability-token-service.j
 import type { MeetingRepository } from "../ports/meeting-repository.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
 
-export function getHostMeeting(
+export async function getHostMeeting(
   repository: MeetingRepository,
   tokens: CapabilityTokenService,
   recommendations: RecommendationDataSource,

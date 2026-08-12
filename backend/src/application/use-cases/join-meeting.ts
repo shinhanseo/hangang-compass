@@ -9,7 +9,7 @@ export interface JoinMeetingInput {
   stationId: string;
 }
 
-export function joinMeeting(
+export async function joinMeeting(
   repository: MeetingRepository,
   tokens: CapabilityTokenService,
   recommendations: RecommendationDataSource,
@@ -27,6 +27,6 @@ export function joinMeeting(
   repository.save(meeting);
   return {
     participantCount: meeting.participants.length,
-    result: buildRecommendationView(meeting, recommendations),
+    result: await buildRecommendationView(meeting, recommendations),
   };
 }

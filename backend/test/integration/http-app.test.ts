@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { CrowdDataProvider } from "../../src/application/ports/crowd-data-provider.js";
+import { createApplicationServices } from "../../src/composition-root.js";
+import { CachedCrowdDataProvider } from "../../src/infrastructure/providers/cached-crowd-data-provider.js";
 import { createApp } from "../../src/presentation/http/app.ts";
 
 test("health endpoint returns safe headers and service status", async (context) => {
@@ -96,4 +99,66 @@ test("create, invite, join twice, and recommend without exposing origins", async
     headers: { cookie: hostCookie.split(";")[0]! },
   });
   assert.equal((await refreshedHost.json()).meeting.confirmedParkId, selectedParkId);
+});
+
+test("live crowd is cached and exposed as an arrival forecast through HTTP", async (context) => {
+  const meetingAt = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
+  let providerCalls = 0;
+  const source: CrowdDataProvider = {
+    crowdFor: async (parkId, areaName) => {
+      providerCalls += 1;
+      return {
+        status: "available",
+        snapshot: {
+          parkId,
+          areaName,
+          areaCode: `code-${parkId}`,
+          current: {
+            level: "normal",
+            observedAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+            freshness: "fresh",
+            isReplacement: false,
+          },
+          forecastStatus: "available",
+          forecasts: [{ forecastFor: meetingAt, level: parkId === "yeouido" ? "busy" : "normal", populationMin: null, populationMax: null }],
+          fetchedAt: new Date().toISOString(),
+          source: "seoul_realtime_citydata",
+        },
+      };
+    },
+  };
+  const services = createApplicationServices({
+    crowdProvider: new CachedCrowdDataProvider(source, 5 * 60_000),
+  });
+  const server = createApp(services).listen(0, "127.0.0.1");
+  context.after(() => server.close());
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  const createdResponse = await fetch(`${baseUrl}/api/meetings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ meetingAt }),
+  });
+  const hostCookie = createdResponse.headers.get("set-cookie")!;
+  const created = await createdResponse.json();
+  const inviteToken = created.invitePath.split("/").at(-1);
+  for (const [alias, stationId] of [["민지", "hongdae"], ["준호", "gangnam"]]) {
+    await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ alias, stationId }),
+    });
+  }
+  const hostResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/host`, {
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  const result = (await hostResponse.json()).meeting.result;
+  assert.equal(result.stage, "live_current");
+  assert.equal(result.recommended.arrivalCrowd.status, "live_forecast");
+  assert.equal(result.recommended.arrivalCrowd.source, "seoul_realtime_citydata");
+  assert.equal(result.recommended.arrivalCrowd.referenceAt, meetingAt);
+  assert.equal(providerCalls, 11);
 });

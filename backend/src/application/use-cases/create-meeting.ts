@@ -10,7 +10,7 @@ export interface CreateMeetingDependencies {
   recommendations: RecommendationDataSource;
 }
 
-export function createMeeting(dependencies: CreateMeetingDependencies, meetingAt: string) {
+export async function createMeeting(dependencies: CreateMeetingDependencies, meetingAt: string) {
   const inviteToken = dependencies.tokens.generateCapability();
   const hostToken = dependencies.tokens.generateCapability();
   const meeting: Meeting = {
@@ -23,7 +23,7 @@ export function createMeeting(dependencies: CreateMeetingDependencies, meetingAt
   };
   dependencies.repository.save(meeting);
   return {
-    meeting: toHostMeetingView(meeting, dependencies.recommendations),
+    meeting: await toHostMeetingView(meeting, dependencies.recommendations),
     inviteToken,
     hostToken,
   };

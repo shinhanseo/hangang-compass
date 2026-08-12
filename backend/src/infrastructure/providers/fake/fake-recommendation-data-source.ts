@@ -87,7 +87,13 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
     return stationExists(stationId);
   }
 
-  candidates(participants: Participant[]): CandidateInput[] {
+  async prepareFor(_meetingAt: string): Promise<void> {}
+
+  stageFor() {
+    return "provisional" as const;
+  }
+
+  candidates(participants: Participant[], _meetingAt: string): CandidateInput[] {
     return fakeCandidates(participants);
   }
 
@@ -99,9 +105,18 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
     return parkExperienceFor(parkId);
   }
 
-  arrivalCrowdFor(parkId: string) {
+  arrivalCrowdFor(parkId: string, _meetingAt: string) {
     const [level, label] = FAKE_ARRIVAL_CROWD[parkId as keyof typeof FAKE_ARRIVAL_CROWD]
       ?? ["normal", "보통"] as const;
-    return { level, label, status: "fake_sample" as const };
+    return {
+      level,
+      label,
+      status: "fake_sample" as const,
+      referenceAt: null,
+      observedAt: null,
+      fetchedAt: null,
+      freshness: null,
+      source: "fake" as const,
+    };
   }
 }

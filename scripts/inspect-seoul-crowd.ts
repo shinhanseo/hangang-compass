@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { SEOUL_HANGANG_AREAS } from "../backend/src/infrastructure/catalog/seoul-hangang-area-catalog.js";
 import { SeoulCitydataCrowdProvider } from "../backend/src/infrastructure/providers/seoul/seoul-citydata-crowd-provider.js";
+import { selectArrivalCrowd } from "../backend/src/domain/crowd/crowd-snapshot.js";
 
 const SPIKE_FRESHNESS_THRESHOLD_MINUTES = 45;
 
@@ -25,6 +26,7 @@ const provider = new SeoulCitydataCrowdProvider({
   apiKey,
   freshnessThresholdMinutes: SPIKE_FRESHNESS_THRESHOLD_MINUTES,
 });
+const targetTime = process.argv.find((argument) => argument.startsWith("--target="))?.slice("--target=".length);
 const summaries = [];
 for (const area of SEOUL_HANGANG_AREAS) {
   const result = await provider.crowdFor(area.parkId, area.areaName);
@@ -45,6 +47,9 @@ for (const area of SEOUL_HANGANG_AREAS) {
     replacement: result.snapshot.current.isReplacement,
     forecastStatus: result.snapshot.forecastStatus,
     forecastCount: result.snapshot.forecasts.length,
+    forecastFirstAt: result.snapshot.forecasts.at(0)?.forecastFor ?? null,
+    forecastLastAt: result.snapshot.forecasts.at(-1)?.forecastFor ?? null,
+    arrivalSelection: targetTime ? selectArrivalCrowd(result.snapshot, targetTime) : null,
   });
 }
 

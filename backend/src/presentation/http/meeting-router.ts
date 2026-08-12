@@ -11,12 +11,12 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json({ stations: services.stations() });
   });
 
-  router.post("/meetings", (request, response) => {
+  router.post("/meetings", async (request, response) => {
     if (!isFutureMeetingTime(request.body?.meetingAt)) {
       response.status(400).json({ error: "invalid_meeting_time" });
       return;
     }
-    const created = services.createMeeting(request.body.meetingAt);
+    const created = await services.createMeeting(request.body.meetingAt);
     response.cookie(`hc_host_${created.meeting.id}`, created.hostToken, capabilityCookieOptions());
     response.cookie(`hc_invite_${created.meeting.id}`, created.inviteToken, capabilityCookieOptions());
     response.status(201).json({
@@ -34,13 +34,13 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json({ meeting });
   });
 
-  router.post("/invites/:inviteToken/participants", (request, response) => {
+  router.post("/invites/:inviteToken/participants", async (request, response) => {
     const input = participantInput(request.body);
     if (!input) {
       response.status(400).json({ error: "invalid_alias" });
       return;
     }
-    const joined = services.joinMeeting({ inviteToken: request.params.inviteToken, ...input });
+    const joined = await services.joinMeeting({ inviteToken: request.params.inviteToken, ...input });
     if (!joined) {
       response.status(400).json({ error: "join_failed" });
       return;
@@ -48,10 +48,10 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.status(201).json(joined);
   });
 
-  router.get("/meetings/:meetingId/host", (request, response) => {
+  router.get("/meetings/:meetingId/host", async (request, response) => {
     const requestCookies = parseCookies(request.headers.cookie);
     const hostToken = requestCookies[`hc_host_${request.params.meetingId}`];
-    const meeting = services.hostMeeting(request.params.meetingId, hostToken);
+    const meeting = await services.hostMeeting(request.params.meetingId, hostToken);
     if (!meeting) {
       response.status(403).json({ error: "host_access_denied" });
       return;
@@ -63,11 +63,11 @@ export function createMeetingRouter(services: ApplicationServices) {
     });
   });
 
-  router.post("/meetings/:meetingId/confirmation", (request, response) => {
+  router.post("/meetings/:meetingId/confirmation", async (request, response) => {
     const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
     const requestCookies = parseCookies(request.headers.cookie);
     const hostToken = requestCookies[`hc_host_${request.params.meetingId}`];
-    const confirmation = services.confirmMeetingPark(request.params.meetingId, hostToken, parkId);
+    const confirmation = await services.confirmMeetingPark(request.params.meetingId, hostToken, parkId);
     if (!confirmation) {
       response.status(403).json({ error: "confirmation_denied" });
       return;

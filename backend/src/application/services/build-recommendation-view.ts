@@ -7,14 +7,16 @@ import {
 import type { CandidateRole, RecommendationResultView } from "../models/meeting-view.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
 
-export function buildRecommendationView(
+export async function buildRecommendationView(
   meeting: Meeting,
   dataSource: RecommendationDataSource,
-): RecommendationResultView | null {
+): Promise<RecommendationResultView | null> {
   if (meeting.participants.length < 2) return null;
-  const candidates = dataSource.candidates(meeting.participants);
+  await dataSource.prepareFor(meeting.meetingAt);
+  const stage = dataSource.stageFor(meeting.meetingAt);
+  const candidates = dataSource.candidates(meeting.participants, meeting.meetingAt);
   const result = recommend({
-    stage: "provisional",
+    stage,
     participantIds: meeting.participants.map((participant) => participant.id),
     candidates,
   }, FAIRNESS_POLICIES.balanced);
@@ -56,7 +58,7 @@ export function buildRecommendationView(
           ? [{ alias: participant.alias, minutes: route.minutes }]
           : [];
       }) ?? [],
-      arrivalCrowd: dataSource.arrivalCrowdFor(candidate.parkId),
+      arrivalCrowd: dataSource.arrivalCrowdFor(candidate.parkId, meeting.meetingAt),
       experience: {
         summary: experience.summary,
         highlights: experience.highlights,
@@ -69,7 +71,9 @@ export function buildRecommendationView(
   };
 
   return {
-    stage: "fake_provisional",
+    stage: dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source === "fake"
+      ? "fake_provisional"
+      : stage === "current" ? "live_current" : "live_provisional",
     recommended: view(result.recommended, "recommended"),
     alternatives: [
       view(travelAlternative, "travel_alternative"),
@@ -77,17 +81,19 @@ export function buildRecommendationView(
     ],
     nearTie: result.nearTie,
     explanation: result.comparison?.summary ?? "이동 공평성을 기준으로 비교했습니다.",
-    notice: "이동시간과 도착 혼잡도는 고정된 fake 표본입니다. 공원 특징은 서울시 공식 자료를 바탕으로 했으며 운영 상태는 방문 전에 다시 확인해야 합니다.",
+    notice: dataSource.arrivalCrowdFor(result.recommended.parkId, meeting.meetingAt).source === "fake"
+      ? "이동시간과 도착 혼잡도는 고정된 fake 표본입니다. 공원 특징은 서울시 공식 자료를 바탕으로 했으며 운영 상태는 방문 전에 다시 확인해야 합니다."
+      : "이동시간은 고정된 fake 표본이고 혼잡도는 서울시 실시간 도시데이터입니다. 혼잡은 추정치이며 관측·예측 기준 시각을 확인해 주세요.",
   };
 }
 
-export function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource) {
+export async function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource) {
   return {
     id: meeting.id,
     meetingAt: meeting.meetingAt,
     participantCount: meeting.participants.length,
     participants: meeting.participants.map((participant) => ({ alias: participant.alias })),
-    result: buildRecommendationView(meeting, dataSource),
+    result: await buildRecommendationView(meeting, dataSource),
     confirmedParkId: meeting.confirmedParkId,
   };
 }

@@ -11,9 +11,15 @@ export interface ParkResult {
   travel: { averageMinutes: number; maximumMinutes: number; rangeMinutes: number };
   participantTimes: Array<{ alias: string; minutes: number }>;
   arrivalCrowd: {
-    level: "relaxed" | "normal" | "busy" | "very_busy";
+    level: "relaxed" | "normal" | "busy" | "very_busy" | null;
     label: string;
-    status: "fake_sample";
+    status: "fake_sample" | "live_current" | "live_forecast" | "outside_forecast_window" | "unavailable";
+    referenceAt: string | null;
+    observedAt: string | null;
+    fetchedAt: string | null;
+    freshness: "fresh" | "stale" | null;
+    source: "fake" | "seoul_realtime_citydata";
+    reason?: string;
   };
   experience: {
     summary: string;
@@ -26,6 +32,7 @@ export interface ParkResult {
 }
 
 export interface RecommendationResult {
+  stage: "fake_provisional" | "live_provisional" | "live_current";
   recommended: ParkResult;
   alternatives: [ParkResult, ParkResult];
   explanation: string;

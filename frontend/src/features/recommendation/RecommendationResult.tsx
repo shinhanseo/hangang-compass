@@ -6,6 +6,31 @@ const ROLE_LABEL = {
   experience_alternative: "다른 즐길거리 대안",
 } as const;
 
+function dateTime(value: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "long", day: "numeric", hour: "numeric", minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function CrowdStatus({ crowd }: { crowd: ParkResult["arrivalCrowd"] }) {
+  const title = crowd.status === "fake_sample"
+    ? `가상 도착 혼잡 · ${crowd.label}`
+    : crowd.status === "live_forecast"
+      ? `도착 예측 · ${crowd.label}`
+      : crowd.status === "live_current"
+        ? `현재 관측 · ${crowd.label}`
+        : `도착 혼잡 · ${crowd.label}`;
+  const details = crowd.referenceAt
+    ? `${crowd.status === "live_forecast" ? "예측 기준" : "관측 기준"} ${dateTime(crowd.referenceAt)}${crowd.freshness === "stale" ? " · 오래된 데이터" : ""}`
+    : null;
+  return (
+    <div className="crowd-status">
+      <span className={`crowd crowd-${crowd.level ?? "unavailable"}`}>{title}</span>
+      {details && <small>{details}</small>}
+    </div>
+  );
+}
+
 function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
   park: ParkResult;
   primary?: boolean;
@@ -16,7 +41,7 @@ function ResultCard({ park, primary = false, confirmed = false, onConfirm }: {
     <article className={`result-card${primary ? " primary" : ""}${confirmed ? " confirmed" : ""}`}>
       <div className="card-topline">
         <p className="card-label">{ROLE_LABEL[park.role]}</p>
-        <span className={`crowd crowd-${park.arrivalCrowd.level}`}>가상 도착 혼잡 · {park.arrivalCrowd.label}</span>
+        <CrowdStatus crowd={park.arrivalCrowd} />
       </div>
       <h2>{park.parkName}</h2>
       <p className="meeting-point">{park.meetingPoint}</p>
@@ -63,7 +88,7 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm }: {
   return (
     <section className="result" aria-live="polite">
       <div className="result-heading">
-        <p className="eyebrow">FAKE RECOMMENDATION</p>
+        <p className="eyebrow">{result.stage === "fake_provisional" ? "FAKE RECOMMENDATION" : "LIVE CROWD · ROUTE SAMPLE"}</p>
         <h1>지금은 여기가 가장 공평해요</h1>
         <p>{result.explanation}</p>
         {result.nearTie && <span className="badge">두 후보의 차이가 크지 않아요</span>}

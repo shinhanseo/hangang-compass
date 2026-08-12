@@ -41,7 +41,7 @@ export function CreateMeetingPage() {
       </section>
       <form className="panel" onSubmit={submit}>
         <label htmlFor="meeting-at">모두가 도착할 날짜와 시간</label>
-        <input id="meeting-at" type="datetime-local" value={meetingAt} onChange={(event) => setMeetingAt(event.target.value)} required />
+        <input id="meeting-at" type="datetime-local" value={meetingAt} onInput={(event) => setMeetingAt(event.currentTarget.value)} required />
         {error && <p className="error">{error}</p>}
         <button disabled={busy}>{busy ? "만드는 중…" : "피크닉 약속 만들기"}</button>
         <p className="note">회원가입 없이 만들 수 있어요. 현재 위치와 정확한 주소는 받지 않습니다.</p>
