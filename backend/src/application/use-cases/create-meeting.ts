@@ -24,7 +24,7 @@ export async function createMeeting(dependencies: CreateMeetingDependencies, mee
     participants: [],
     confirmedParkId: null,
   };
-  dependencies.repository.save(meeting);
+  await dependencies.repository.save(meeting);
   return {
     meeting: await toHostMeetingView(meeting, dependencies.recommendations),
     inviteToken,

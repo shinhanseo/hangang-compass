@@ -21,14 +21,14 @@ export async function joinMeeting(
   origins: OriginPlaceProvider,
   input: JoinMeetingInput,
 ) {
-  const meeting = repository.findByInviteTokenHash(tokens.hashCapability(input.inviteToken));
+  const meeting = await repository.findByInviteTokenHash(tokens.hashCapability(input.inviteToken));
   if (!meeting || meeting.participants.length >= 8) {
     return null;
   }
   const participant = await addMeetingParticipant(meeting, tokens, origins, { ...input, role: "guest" });
   if (!participant) return null;
   meeting.participants.push(participant);
-  repository.save(meeting);
+  await repository.save(meeting);
   const result = await buildRecommendationView(meeting, recommendations);
   return {
     participantCount: meeting.participants.length,

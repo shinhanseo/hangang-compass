@@ -22,33 +22,33 @@ function meeting(overrides: Partial<Meeting> = {}): Meeting {
   };
 }
 
-test("SQLite repository survives reopening without storing capability originals", (context) => {
+test("SQLite repository survives reopening without storing capability originals", async (context) => {
   const directory = mkdtempSync(join(tmpdir(), "hangang-meetings-"));
   const path = join(directory, "meetings.sqlite");
   context.after(() => rmSync(directory, { recursive: true, force: true }));
   const first = new SqliteMeetingRepository(path);
-  first.save(meeting());
+  await first.save(meeting());
   first.close();
 
   const reopened = new SqliteMeetingRepository(path);
   context.after(() => reopened.close());
-  assert.equal(reopened.findById("meeting-1")?.meetingAt, "2099-01-02T12:00:00.000Z");
-  assert.equal(reopened.findByInviteTokenHash("invite-hash")?.id, "meeting-1");
-  assert.equal(reopened.findByInviteTokenHash("invite-token-original"), undefined);
+  assert.equal((await reopened.findById("meeting-1"))?.meetingAt, "2099-01-02T12:00:00.000Z");
+  assert.equal((await reopened.findByInviteTokenHash("invite-hash"))?.id, "meeting-1");
+  assert.equal(await reopened.findByInviteTokenHash("invite-token-original"), undefined);
 });
 
-test("SQLite repository removes drafts after the approved seven-day retention", (context) => {
+test("SQLite repository removes drafts after the approved seven-day retention", async (context) => {
   const repository = new SqliteMeetingRepository(":memory:");
   context.after(() => repository.close());
-  repository.save(meeting({ createdAt: "2099-01-01T00:00:00.000Z" }));
+  await repository.save(meeting({ createdAt: "2099-01-01T00:00:00.000Z" }));
   assert.equal(repository.deleteExpired(new Date("2099-01-08T00:00:00.001Z")), 1);
-  assert.equal(repository.findById("meeting-1"), undefined);
+  assert.equal(await repository.findById("meeting-1"), undefined);
 });
 
-test("confirming a meeting extends retention through one day after its time", (context) => {
+test("confirming a meeting extends retention through one day after its time", async (context) => {
   const repository = new SqliteMeetingRepository(":memory:");
   context.after(() => repository.close());
-  repository.save(meeting({
+  await repository.save(meeting({
     createdAt: "2099-01-01T00:00:00.000Z",
     meetingAt: "2099-01-20T12:00:00.000Z",
     confirmedParkId: "yeouido",

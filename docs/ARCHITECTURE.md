@@ -2,7 +2,7 @@
 
 ## 1. 문서 상태
 
-제품 형태와 애플리케이션 스택은 모바일 우선 반응형 웹앱, TypeScript 기반 React 클라이언트, Node.js/Express API로 확정했다. 구체적인 빌드 도구, 데이터베이스, 배포 서비스와 외부 데이터 공급자는 아직 확정되지 않았다. 이 문서는 추천 구조와 결정 기준을 제안하며, 스파이크 결과 전의 선택을 확정 사실로 다루지 않는다.
+제품 형태와 애플리케이션 스택은 모바일 우선 반응형 웹앱, TypeScript 기반 React 클라이언트, Node.js/Express API로 확정했다. 약속 데이터의 배포 저장소는 무료 Supabase PostgreSQL로 결정했고 로컬 개발은 SQLite를 유지한다. 웹·API 배포 서비스는 아직 확정하지 않았다. 이 문서는 추천 구조와 결정 기준을 제안하며, 스파이크 결과 전의 선택을 확정 사실로 다루지 않는다.
 
 ## 2. 설계 목표
 
@@ -117,7 +117,9 @@
 
 단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
 
-실행 서버는 Node 22.13 이상에서 플래그 없이 제공되는 내장 SQLite 저장소를 사용하며 기본 파일은 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. SQLite 파일에는 공개 장소 공급자 참조와 해시된 권한만 저장하고 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 파일 기반 저장소이므로 운영 배포 대상은 영구 볼륨이 필요하며, 영구 디스크가 없는 서버리스 배포에서는 같은 repository 포트의 PostgreSQL 구현으로 교체해야 한다.
+저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
+
+프론트엔드는 Supabase Data API에 직접 접근하지 않는다. Express API만 서버 전용 `DATABASE_URL`로 연결하므로 Supabase Auth·Realtime·Storage와 공개 service-role 키는 현재 범위에 포함하지 않는다. IPv4 장기 실행 서버는 Session pooler, 서버리스는 Transaction pooler를 사용한다. 무료 프로젝트의 저활동 일시 정지와 자동 백업 부재를 MVP 제한으로 기록하고, 유료 전환은 자동으로 수행하지 않는다.
 
 같은 브라우저는 `localStorage`에 최근 약속의 ID와 시각만 최대 5개 저장하고 HttpOnly 방장 쿠키로 실제 권한을 검증한다. 다른 기기 복구 링크는 256비트 방장·초대 capability를 URL fragment에 담는다. 복구 화면이 fragment를 읽어 서버에서 해시를 검증하고 쿠키를 발급한 뒤 즉시 URL을 정리한다. 방장 화면은 필요할 때만 새 복구 링크를 만들며 활성 capability 수를 제한한다.
 
@@ -146,7 +148,6 @@
 ### 아직 선택하지 않는 항목
 
 - React 라우터
-- 데이터베이스와 ORM/쿼리 도구
 - 웹·API 배포 서비스
 - 인증 또는 방장 식별 구현체
 - PWA 적용 여부
@@ -165,7 +166,7 @@
 
 ## 7. 백엔드 인프라 선택 원칙
 
-API 런타임은 Node.js/Express로 확정했지만 데이터베이스와 배포 제품은 아직 선택하지 않는다. 초기에는 관리형 관계형 데이터베이스와 Node.js 실행이 가능한 서버/컨테이너 조합을 우선 비교한다.
+API 런타임은 Node.js/Express, 배포 데이터베이스는 Supabase PostgreSQL로 확정했다. 별도 ORM 없이 `pg` 어댑터를 repository port 뒤에 두며, 배포 제품은 아직 선택하지 않는다. Node.js 실행이 가능한 무료 서버/컨테이너 조합을 우선 비교한다.
 
 필수 조건:
 

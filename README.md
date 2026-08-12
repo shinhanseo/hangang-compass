@@ -28,7 +28,7 @@
 - 추천 결과 상단에서 11개 공원의 현재·도착 예상 혼잡을 비교하는 그래프 연결
 - 약속 날짜·시간을 앱 팔레트의 모바일 바텀시트에서 선택하는 흐름 연결
 - 경로 실패 시 fake 시간으로 대체하지 않는 장애 상태와 서버 메모리 캐시·무료 호출량 방어선 구현
-- Node 내장 SQLite 약속 저장소, 같은 기기의 진행 중인 약속, 기기 간 방장 전용 복구 링크 구현
+- 로컬 SQLite·배포용 Supabase PostgreSQL 약속 저장소, 같은 기기의 진행 중인 약속, 기기 간 방장 전용 복구 링크 구현
 - 실제 사용자 약속 사례 비교와 날씨·행사·통제 통합 예정
 
 ## MVP
@@ -72,16 +72,19 @@ AI가 생성한 결과도 자동 테스트와 시나리오 기반 인수 기준�
 
 ## Local harness
 
-Node.js 22.12 이상과 npm을 사용합니다.
+Node.js 22.13 이상과 npm을 사용합니다.
 
 ```bash
 npm install
 npm run check
+npm run test:postgres --workspace @hangang-compass/backend
 npm run dev:web
 npm run dev:api
 ```
 
-`npm run check`는 비밀값 검사, TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 키가 없으면 안전한 fixture로 실행되고, 키가 있으면 카카오 경로와 서울시 혼잡을 서버에서만 조회합니다. 현재 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
+`npm run check`는 비밀값 검사, TypeScript strict 검사, 도메인·API 테스트, 웹·API 프로덕션 빌드를 순서대로 실행합니다. `test:postgres`는 루트 `.env`의 배포 DB에 임시 검증 행을 만들고 조회한 뒤 즉시 삭제하는 명시적 실연동 검사입니다. 로컬 비밀값은 루트 `.env`에만 두며 웹 앱으로 전달하지 않습니다. 키가 없으면 안전한 fixture로 실행되고, 키가 있으면 카카오 경로와 서울시 혼잡을 서버에서만 조회합니다. 현재 여정은 [demo guide](./docs/DEMO.md)에서 확인할 수 있습니다.
+
+약속 저장소는 `DATABASE_URL`이 있으면 Supabase PostgreSQL을, 없으면 루트 `.data/meetings.sqlite`를 사용합니다. Supabase 연결 문자열은 서버 전용이며 브라우저 번들에 포함하지 않습니다. IPv4 환경의 장기 실행 Node 서버에서는 Session pooler, 서버리스에서는 Transaction pooler 연결 문자열을 사용합니다.
 
 ## Repository structure
 
@@ -107,7 +110,7 @@ backend/src/
 - 추천 점수와 설명은 같은 테스트 가능한 근거에서 생성합니다.
 - 데이터가 없거나 오래된 경우 그 사실을 숨기지 않습니다.
 - 비밀키와 참여자의 정밀 위치를 브라우저 번들이나 저장소에 넣지 않습니다.
-- 초대·방장 복구 토큰은 256비트 난수의 해시만 SQLite에 저장하며, 방장 링크의 URL fragment는 쿠키 복구 직후 주소에서 제거합니다.
+- 초대·방장 복구 토큰은 256비트 난수의 해시만 서버 DB에 저장하며, 방장 링크의 URL fragment는 쿠키 복구 직후 주소에서 제거합니다.
 - 게임화, 소셜 피드, 과도한 로그인과 불필요한 생성형 AI는 MVP 범위에 포함하지 않습니다.
 
 ## License

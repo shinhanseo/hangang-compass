@@ -12,13 +12,13 @@ export async function confirmMeetingPark(
   hostToken: string | undefined,
   parkId: string,
 ) {
-  const meeting = repository.findById(meetingId);
+  const meeting = await repository.findById(meetingId);
   if (!isAuthorizedHost(meeting, tokens, hostToken)) return null;
   const result = await buildRecommendationView(meeting, recommendations);
   const candidates = result ? [result.recommended, ...result.alternatives] : [];
   const selected = candidates.find((candidate) => candidate.parkId === parkId);
   if (!selected) return null;
   meeting.confirmedParkId = selected.parkId;
-  repository.save(meeting);
+  await repository.save(meeting);
   return { confirmedParkId: selected.parkId, confirmedParkName: selected.parkName };
 }

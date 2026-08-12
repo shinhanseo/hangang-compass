@@ -53,7 +53,7 @@ export class SqliteMeetingRepository implements MeetingRepository {
     this.deleteExpired();
   }
 
-  save(meeting: Meeting): void {
+  async save(meeting: Meeting): Promise<void> {
     const insertMeeting = this.#database.prepare(`
       INSERT INTO meetings (id, payload, expires_at) VALUES (?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at
@@ -72,13 +72,13 @@ export class SqliteMeetingRepository implements MeetingRepository {
     }
   }
 
-  findById(id: string): Meeting | undefined {
+  async findById(id: string): Promise<Meeting | undefined> {
     this.deleteExpired();
     const row = this.#database.prepare("SELECT payload FROM meetings WHERE id = ?").get(id) as MeetingRow | undefined;
     return row ? parseMeeting(row.payload) : undefined;
   }
 
-  findByInviteTokenHash(inviteTokenHash: string): Meeting | undefined {
+  async findByInviteTokenHash(inviteTokenHash: string): Promise<Meeting | undefined> {
     this.deleteExpired();
     const row = this.#database.prepare(`
       SELECT meetings.payload

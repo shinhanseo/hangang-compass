@@ -10,6 +10,7 @@ import { KakaoOriginPlaceProvider } from "./infrastructure/providers/kakao/kakao
 import { SeoulCitydataCrowdProvider } from "./infrastructure/providers/seoul/seoul-citydata-crowd-provider.js";
 import { createApp } from "./presentation/http/app.js";
 import { SqliteMeetingRepository } from "./infrastructure/persistence/sqlite-meeting-repository.js";
+import { PostgresMeetingRepository } from "./infrastructure/persistence/postgres-meeting-repository.js";
 
 const envPath = fileURLToPath(new URL("../../.env", import.meta.url));
 if (existsSync(envPath)) process.loadEnvFile(envPath);
@@ -17,7 +18,10 @@ const port = Number(process.env.PORT ?? 3000);
 const seoulApiKey = process.env.SEOUL_OPEN_DATA_KEY;
 const kakaoApiKey = process.env.KAKAO_REST_API_KEY;
 const defaultDatabasePath = fileURLToPath(new URL("../../.data/meetings.sqlite", import.meta.url));
-const meetingRepository = new SqliteMeetingRepository(resolve(process.env.MEETING_DATABASE_PATH ?? defaultDatabasePath));
+const meetingRepository = process.env.DATABASE_URL
+  ? new PostgresMeetingRepository(process.env.DATABASE_URL)
+  : new SqliteMeetingRepository(resolve(process.env.MEETING_DATABASE_PATH ?? defaultDatabasePath));
+if (meetingRepository instanceof PostgresMeetingRepository) await meetingRepository.initialize();
 const crowdProvider = seoulApiKey
   ? new CachedCrowdDataProvider(new SeoulCitydataCrowdProvider({
       apiKey: seoulApiKey,

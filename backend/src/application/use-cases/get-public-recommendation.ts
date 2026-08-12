@@ -9,7 +9,7 @@ export async function getPublicRecommendation(
   recommendations: RecommendationDataSource,
   inviteToken: string,
 ) {
-  const meeting = repository.findByInviteTokenHash(tokens.hashCapability(inviteToken));
+  const meeting = await repository.findByInviteTokenHash(tokens.hashCapability(inviteToken));
   if (!meeting || meeting.participants.length < 2) return null;
   const result = await buildRecommendationView(meeting, recommendations);
   if (!result) return null;

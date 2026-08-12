@@ -14,12 +14,12 @@ export async function setSharedOrigin(
     placeName: string;
   },
 ) {
-  const meeting = repository.findById(input.meetingId);
+  const meeting = await repository.findById(input.meetingId);
   if (!isAuthorizedHost(meeting, tokens, input.hostToken)) return null;
   if (meeting.travelPattern !== "shared_origin" || meeting.participants.length > 0) return null;
   const place = await origins.resolve({ id: input.placeId, name: input.placeName });
   if (!place) return null;
   meeting.sharedOrigin = { placeId: place.id, placeName: place.name };
-  repository.save(meeting);
+  await repository.save(meeting);
   return { sharedOriginName: place.name };
 }

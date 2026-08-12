@@ -21,12 +21,12 @@ export async function setHostParticipant(
     destinationPlaceName?: string;
   },
 ) {
-  const meeting = repository.findById(input.meetingId);
+  const meeting = await repository.findById(input.meetingId);
   if (!isAuthorizedHost(meeting, tokens, input.hostToken)) return null;
   if (meeting.participants.some((participant) => participant.role === "host")) return null;
   const participant = await addMeetingParticipant(meeting, tokens, origins, { ...input, role: "host" });
   if (!participant) return null;
   meeting.participants.push(participant);
-  repository.save(meeting);
+  await repository.save(meeting);
   return toHostMeetingView(meeting, recommendations);
 }

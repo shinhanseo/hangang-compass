@@ -22,8 +22,8 @@ export function createMeetingRouter(services: ApplicationServices) {
     });
   });
 
-  router.get("/invites/:inviteToken", (request, response) => {
-    const meeting = services.publicMeeting(request.params.inviteToken);
+  router.get("/invites/:inviteToken", async (request, response) => {
+    const meeting = await services.publicMeeting(request.params.inviteToken);
     if (!meeting) {
       response.status(404).json({ error: "invite_not_found" });
       return;
@@ -32,7 +32,7 @@ export function createMeetingRouter(services: ApplicationServices) {
   });
 
   router.get("/invites/:inviteToken/places", async (request, response) => {
-    if (!services.publicMeeting(request.params.inviteToken)) {
+    if (!await services.publicMeeting(request.params.inviteToken)) {
       response.status(404).json({ error: "invite_not_found" });
       return;
     }
@@ -83,13 +83,13 @@ export function createMeetingRouter(services: ApplicationServices) {
     const inviteToken = requestCookies[`hc_invite_${request.params.meetingId}`];
     response.json({
       meeting,
-      invitePath: inviteToken && services.publicMeeting(inviteToken) ? `/join/${inviteToken}` : null,
+      invitePath: inviteToken && await services.publicMeeting(inviteToken) ? `/join/${inviteToken}` : null,
     });
   });
 
-  router.get("/meetings/:meetingId/host-access", (request, response) => {
+  router.get("/meetings/:meetingId/host-access", async (request, response) => {
     const requestCookies = parseCookies(request.headers.cookie);
-    const summary = services.hostAccessSummary(
+    const summary = await services.hostAccessSummary(
       request.params.meetingId,
       requestCookies[`hc_host_${request.params.meetingId}`],
     );
@@ -100,9 +100,9 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json({ meeting: summary });
   });
 
-  router.post("/meetings/:meetingId/recovery-link", (request, response) => {
+  router.post("/meetings/:meetingId/recovery-link", async (request, response) => {
     const requestCookies = parseCookies(request.headers.cookie);
-    const recovery = services.createHostRecoveryLink(
+    const recovery = await services.createHostRecoveryLink(
       request.params.meetingId,
       requestCookies[`hc_host_${request.params.meetingId}`],
     );
@@ -113,14 +113,14 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.status(201).json(recovery);
   });
 
-  router.post("/meetings/:meetingId/recover", (request, response) => {
+  router.post("/meetings/:meetingId/recover", async (request, response) => {
     const hostToken = typeof request.body?.hostToken === "string" ? request.body.hostToken : "";
     const inviteToken = typeof request.body?.inviteToken === "string" ? request.body.inviteToken : "";
     if (!/^[A-Za-z0-9_-]{43}$/u.test(hostToken) || !/^[A-Za-z0-9_-]{43}$/u.test(inviteToken)) {
       response.status(400).json({ error: "invalid_recovery_capability" });
       return;
     }
-    const recovered = services.recoverHostAccess(request.params.meetingId, hostToken, inviteToken);
+    const recovered = await services.recoverHostAccess(request.params.meetingId, hostToken, inviteToken);
     if (!recovered) {
       response.status(403).json({ error: "recovery_denied" });
       return;
