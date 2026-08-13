@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { ParkResult, RecommendationResult as Recommendation } from "../../shared/api/contracts";
 import { AppIcon } from "../../shared/ui/AppIcon";
+import { ConfirmedParkGuide } from "./ConfirmedParkGuide";
 
 const ROLE_LABEL = {
   recommended: "추천",
@@ -152,12 +153,18 @@ export function RecommendationResult({ result, confirmedParkId, onConfirm, updat
   updateNotice?: string;
   decisionPanel?: ReactNode;
 }) {
+  const confirmedPark = confirmedParkId
+    ? [result.recommended, ...result.alternatives].find((park) => park.parkId === confirmedParkId) ?? null
+    : null;
   return (
     <section className="result" aria-live="polite">
+      {confirmedPark && <ConfirmedParkGuide park={confirmedPark} />}
       <div className="result-heading">
         {updateNotice && <p className="recommendation-update" role="status"><AppIcon name="spark" size={17} />{updateNotice}</p>}
-        <p className="result-kicker"><span><AppIcon name="spark" size={15} /></span>현재 추천 결과</p>
-        <h1>지금은 여기를<br />가장 추천해요</h1>
+        <p className="result-kicker"><span><AppIcon name="spark" size={15} /></span>{confirmedPark ? "결정 과정 다시 보기" : "현재 추천 결과"}</p>
+        {confirmedPark
+          ? <h2>왜 이곳을<br />골랐는지 볼까요?</h2>
+          : <h1>지금은 여기를<br />가장 추천해요</h1>}
       </div>
       <div className="result-grid">
         <ResultCard park={result.recommended} stage={result.stage} primary confirmed={confirmedParkId === result.recommended.parkId} onConfirm={onConfirm} />

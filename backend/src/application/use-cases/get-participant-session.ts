@@ -19,6 +19,7 @@ export async function getParticipantSession(
   return {
     submitted: true as const,
     participantCount: meeting.participants.length,
+    confirmedParkId: meeting.confirmedParkId,
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const

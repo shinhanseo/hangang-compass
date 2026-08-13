@@ -12,5 +12,6 @@ export async function getPublicMeeting(
     travelPattern: meeting.travelPattern,
     sharedOriginName: meeting.sharedOrigin?.placeName ?? null,
     participantCount: meeting.participants.length,
+    confirmedParkId: meeting.confirmedParkId,
   } : null;
 }

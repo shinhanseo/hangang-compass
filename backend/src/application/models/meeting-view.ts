@@ -86,4 +86,5 @@ export interface PublicMeetingView {
   travelPattern: TravelPattern;
   sharedOriginName: string | null;
   participantCount: number;
+  confirmedParkId: string | null;
 }

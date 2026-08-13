@@ -13,7 +13,8 @@ import { AppIcon } from "../../shared/ui/AppIcon";
 import { MobileAppBar } from "../../shared/ui/MobileAppBar";
 
 export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
-  const [meeting, setMeeting] = useState<{ meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } | null>(null);
+  type InviteMeeting = { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null; confirmedParkId: string | null };
+  const [meeting, setMeeting] = useState<InviteMeeting | null>(null);
   const [alias, setAlias] = useState("");
   const [origin, setOrigin] = useState<OriginPlace | null>(null);
   const [destination, setDestination] = useState<OriginPlace | null>(null);
@@ -33,15 +34,17 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [pollError, setPollError] = useState("");
 
   useEffect(() => {
-    api<{ meeting: { meetingAt: string; participantCount: number; travelPattern: "shared_origin" | "individual_round_trip"; sharedOriginName: string | null } }>(`/api/invites/${inviteToken}`).then(async (invite) => {
+    api<{ meeting: InviteMeeting }>(`/api/invites/${inviteToken}`).then(async (invite) => {
       setMeeting(invite.meeting);
       setCount(invite.meeting.participantCount);
       const restored = await api<{ session: ParticipantSession }>(`/api/invites/${inviteToken}/participant-session`).catch(() => null);
       if (restored?.session.submitted) {
+        const restoredSession = restored.session;
         setSubmitted(true);
-        setCount(restored.session.participantCount);
-        setResult(restored.session.result);
-        setRecommendationFailure(restored.session.recommendationStatus === "route_unavailable" || restored.session.recommendationStatus === "route_quota_exceeded" ? restored.session.recommendationStatus : null);
+        setCount(restoredSession.participantCount);
+        setResult(restoredSession.result);
+        setMeeting((current) => current ? { ...current, confirmedParkId: restoredSession.confirmedParkId } : current);
+        setRecommendationFailure(restoredSession.recommendationStatus === "route_unavailable" || restoredSession.recommendationStatus === "route_quota_exceeded" ? restoredSession.recommendationStatus : null);
         return;
       }
       if (invite.meeting.participantCount >= 2) {
@@ -94,9 +97,12 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   }, [inviteToken, result?.refreshAt]);
   useEffect(() => {
     if (!publicResult && !result) return;
-    const refreshPoll = () => void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => undefined);
-    refreshPoll();
-    const timer = window.setInterval(refreshPoll, 4_000);
+    const refreshDecision = () => {
+      void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => setPoll(null));
+      void api<{ meeting: InviteMeeting }>(`/api/invites/${inviteToken}`).then((response) => setMeeting(response.meeting)).catch(() => undefined);
+    };
+    refreshDecision();
+    const timer = window.setInterval(refreshDecision, 4_000);
     return () => window.clearInterval(timer);
   }, [inviteToken, Boolean(publicResult), Boolean(result)]);
 
@@ -173,7 +179,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   if (!meeting) return <main className="shell app-screen"><MobileAppBar /><div className="loading-screen"><span /><p>초대장을 불러오는 중…</p></div></main>;
   if (result) return <main className="shell app-screen"><MobileAppBar />
     {viewingPublicResult && <section className="public-result-banner"><div><small>{poll ? "친구들 투표가 열렸어요" : "이미 진행 중인 약속이에요"}</small><strong>{poll ? "후보와 투표 현황을 보고 있어요" : "현재 추천을 먼저 보고 있어요"}</strong></div><button type="button" onClick={() => { setResult(null); setViewingPublicResult(false); }}>내 장소도 입력하기</button></section>}
-    <RecommendationResult result={result} updateNotice={recommendationUpdate} decisionPanel={poll ? <>
+    <RecommendationResult result={result} confirmedParkId={meeting.confirmedParkId} updateNotice={recommendationUpdate} decisionPanel={poll ? <>
       <MeetingPollPanel result={result} poll={poll} role="participant" busy={pollBusy} onVote={(parkId) => void vote(parkId)} />
       {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
     </> : undefined} />

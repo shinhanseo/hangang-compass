@@ -112,6 +112,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   const restoredSession = (await restoredSessionResponse.json()).session;
   assert.equal(restoredSession.submitted, true);
   assert.equal(restoredSession.participantCount, 2);
+  assert.equal(restoredSession.confirmedParkId, null);
   assert.ok(restoredSession.result?.recommended.parkId);
   assert.equal(JSON.stringify(restoredSession).includes("hongdae"), false);
 
@@ -256,6 +257,12 @@ test("create, invite, join twice, and recommend without exposing origins", async
     headers: { cookie: hostCookie.split(";")[0]! },
   });
   assert.equal((await refreshedHost.json()).meeting.confirmedParkId, selectedParkId);
+  const confirmedInvite = await fetch(`${baseUrl}/api/invites/${inviteToken}`);
+  assert.equal((await confirmedInvite.json()).meeting.confirmedParkId, selectedParkId);
+  const confirmedParticipantSession = await fetch(`${baseUrl}/api/invites/${inviteToken}/participant-session`, {
+    headers: { cookie: participantCookies[0]! },
+  });
+  assert.equal((await confirmedParticipantSession.json()).session.confirmedParkId, selectedParkId);
 
   assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, { method: "DELETE" })).status, 403);
   const deletionResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, {
