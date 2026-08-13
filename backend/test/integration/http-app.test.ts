@@ -84,6 +84,7 @@ test("create, invite, join twice, and recommend without exposing origins", async
   const anonymousSession = await fetch(`${baseUrl}/api/invites/${inviteToken}/participant-session`);
   assert.deepEqual(await anonymousSession.json(), { session: { submitted: false } });
   const participantCookies: string[] = [];
+  const participantResumeTokens: string[] = [];
   for (const [alias, originPlaceId, originPlaceName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
     const joinResponse = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
       method: "POST",
@@ -91,7 +92,10 @@ test("create, invite, join twice, and recommend without exposing origins", async
       body: JSON.stringify({ alias, originPlaceId, originPlaceName }),
     });
     assert.equal(joinResponse.status, 201);
-    assert.equal(JSON.stringify(await joinResponse.json()).includes("participantToken"), false);
+    const joinBody = await joinResponse.json();
+    assert.equal(JSON.stringify(joinBody).includes('"participantToken"'), false);
+    assert.match(joinBody.resumeToken, /^[A-Za-z0-9_-]{43}$/u);
+    participantResumeTokens.push(joinBody.resumeToken);
     const participantSetCookie = joinResponse.headers.get("set-cookie") ?? "";
     assert.match(participantSetCookie, /SameSite=Lax/u);
     assert.match(participantSetCookie, /HttpOnly/u);
@@ -111,9 +115,16 @@ test("create, invite, join twice, and recommend without exposing origins", async
   assert.ok(restoredSession.result?.recommended.parkId);
   assert.equal(JSON.stringify(restoredSession).includes("hongdae"), false);
 
+  const resumedWithoutCookie = await fetch(`${baseUrl}/api/invites/${inviteToken}/participant-session`, {
+    headers: { "x-hc-participant-resume": participantResumeTokens[0]! },
+  });
+  assert.equal(resumedWithoutCookie.status, 200);
+  assert.equal((await resumedWithoutCookie.json()).session.submitted, true);
+  assert.match(resumedWithoutCookie.headers.get("set-cookie") ?? "", /hc_participant=.*SameSite=Lax/u);
+
   const duplicateSubmission = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
     method: "POST",
-    headers: { cookie: participantCookies[0]!, "content-type": "application/json" },
+    headers: { "x-hc-participant-resume": participantResumeTokens[0]!, "content-type": "application/json" },
     body: JSON.stringify({ alias: "중복", originPlaceId: "gangnam", originPlaceName: "강남역", travelMode: "car" }),
   });
   assert.equal(duplicateSubmission.status, 200);

@@ -4,6 +4,7 @@ export interface Participant {
   role?: "host" | "guest";
   travelMode?: TravelMode;
   capabilityTokenHash?: string;
+  resumeTokenHash?: string;
   origin: {
     placeId: string;
     placeName: string;

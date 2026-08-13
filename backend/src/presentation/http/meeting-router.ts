@@ -7,6 +7,15 @@ import { isFutureMeetingTime, participantInput, placeQuery, travelPattern } from
 export function createMeetingRouter(services: ApplicationServices) {
   const router = Router();
 
+  function participantResumeToken(request: { headers: Record<string, unknown> }): string | undefined {
+    const value = request.headers["x-hc-participant-resume"];
+    return typeof value === "string" && /^[A-Za-z0-9_-]{43}$/u.test(value) ? value : undefined;
+  }
+
+  function participantCredential(request: { headers: Record<string, unknown> }): string | undefined {
+    return participantResumeToken(request) ?? parseCookies(request.headers.cookie as string | undefined).hc_participant;
+  }
+
   router.post("/meetings", async (request, response) => {
     const selectedTravelPattern = travelPattern(request.body?.travelPattern);
     if (!isFutureMeetingTime(request.body?.meetingAt) || !selectedTravelPattern) {
@@ -59,10 +68,15 @@ export function createMeetingRouter(services: ApplicationServices) {
   });
 
   router.get("/invites/:inviteToken/participant-session", async (request, response) => {
-    const session = await services.participantSession(
-      request.params.inviteToken,
-      parseCookies(request.headers.cookie).hc_participant,
-    );
+    const cookieToken = parseCookies(request.headers.cookie).hc_participant;
+    const resumeToken = participantResumeToken(request);
+    let session = await services.participantSession(request.params.inviteToken, cookieToken);
+    if (session && !session.submitted && resumeToken) {
+      session = await services.participantSession(request.params.inviteToken, resumeToken);
+      if (session?.submitted) {
+        response.cookie("hc_participant", resumeToken, { ...participantCapabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
+      }
+    }
     if (!session) {
       response.status(404).json({ error: "invite_not_found" });
       return;
@@ -71,13 +85,16 @@ export function createMeetingRouter(services: ApplicationServices) {
   });
 
   router.post("/invites/:inviteToken/participants", async (request, response) => {
-    const participantToken = parseCookies(request.headers.cookie).hc_participant;
-    const existingSession = await services.participantSession(request.params.inviteToken, participantToken);
+    const existingCredential = participantCredential(request);
+    const existingSession = await services.participantSession(request.params.inviteToken, existingCredential);
     if (!existingSession) {
       response.status(404).json({ error: "invite_not_found" });
       return;
     }
     if (existingSession.submitted) {
+      if (existingCredential) {
+        response.cookie("hc_participant", existingCredential, { ...participantCapabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
+      }
       response.status(200).json(existingSession);
       return;
     }
@@ -92,8 +109,8 @@ export function createMeetingRouter(services: ApplicationServices) {
       return;
     }
     response.cookie("hc_participant", joined.participantToken, { ...participantCapabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
-    const { participantToken: _participantToken, meetingId: _meetingId, ...view } = joined;
-    response.status(201).json(view);
+    const { participantToken: _participantToken, participantResumeToken, meetingId: _meetingId, ...view } = joined;
+    response.status(201).json({ ...view, resumeToken: participantResumeToken });
   });
 
   router.get("/meetings/:meetingId/host", async (request, response) => {
@@ -221,14 +238,14 @@ export function createMeetingRouter(services: ApplicationServices) {
   });
 
   router.get("/invites/:inviteToken/poll", async (request, response) => {
-    const poll = await services.publicMeetingPoll(request.params.inviteToken, parseCookies(request.headers.cookie).hc_participant);
+    const poll = await services.publicMeetingPoll(request.params.inviteToken, participantCredential(request));
     if (!poll) return void response.status(404).json({ error: "poll_not_found" });
     response.json({ poll });
   });
 
   router.post("/invites/:inviteToken/poll/vote", async (request, response) => {
     const parkId = typeof request.body?.parkId === "string" ? request.body.parkId : "";
-    const poll = await services.votePublicMeetingPoll(request.params.inviteToken, parseCookies(request.headers.cookie).hc_participant, parkId);
+    const poll = await services.votePublicMeetingPoll(request.params.inviteToken, participantCredential(request), parkId);
     if (!poll) return void response.status(403).json({ error: "poll_vote_denied" });
     response.json({ poll });
   });

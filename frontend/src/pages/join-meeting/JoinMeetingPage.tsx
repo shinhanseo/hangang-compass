@@ -8,6 +8,7 @@ import type { MeetingPoll, OriginPlace, ParticipantSession, RecommendationResult
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
+import { saveParticipantResumeToken } from "../../shared/lib/participant-resume";
 import { AppIcon } from "../../shared/ui/AppIcon";
 import { MobileAppBar } from "../../shared/ui/MobileAppBar";
 
@@ -124,6 +125,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
         participantCount: number;
         result: Recommendation | null;
         recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+        resumeToken?: string;
       }>(`/api/invites/${inviteToken}/participants`, {
         method: "POST",
         body: JSON.stringify({
@@ -135,6 +137,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
           travelMode,
         }),
       });
+      if (joined.resumeToken) saveParticipantResumeToken(inviteToken, joined.resumeToken);
       setCount(joined.participantCount);
       setSubmitted(true);
       setResult(joined.result);

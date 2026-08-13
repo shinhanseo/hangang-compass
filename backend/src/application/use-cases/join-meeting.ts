@@ -30,13 +30,16 @@ export async function joinMeeting(
   const participant = await addMeetingParticipant(meeting, tokens, origins, { ...input, role: "guest" });
   if (!participant) return null;
   const participantToken = tokens.generateCapability();
+  const participantResumeToken = tokens.generateCapability();
   participant.capabilityTokenHash = tokens.hashCapability(participantToken);
+  participant.resumeTokenHash = tokens.hashCapability(participantResumeToken);
   meeting.participants.push(participant);
   await repository.save(meeting);
   const result = await buildRecommendationView(meeting, recommendations);
   return {
     meetingId: meeting.id,
     participantToken,
+    participantResumeToken,
     participantCount: meeting.participants.length,
     result,
     recommendationStatus: meeting.participants.length < 2

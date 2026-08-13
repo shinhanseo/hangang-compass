@@ -8,5 +8,7 @@ export function authorizedParticipantId(
 ): string | undefined {
   if (!participantToken) return undefined;
   const hash = tokens.hashCapability(participantToken);
-  return meeting.participants.find((participant) => participant.capabilityTokenHash === hash)?.id;
+  return meeting.participants.find((participant) =>
+    participant.capabilityTokenHash === hash || participant.resumeTokenHash === hash
+  )?.id;
 }
