@@ -5,6 +5,26 @@ export interface OriginPlace {
   category: string;
 }
 
+export type NearbyPlaceKind = "spot" | "food" | "cafe" | "store";
+
+export interface NearbyPlaceGuide {
+  parkId: string;
+  fetchedAt: string;
+  source: "kakao_local" | "fake";
+  sections: Array<{
+    kind: NearbyPlaceKind;
+    status: "available" | "unavailable";
+    places: Array<{
+      id: string;
+      name: string;
+      category: string;
+      address: string;
+      distanceMeters: number;
+      kakaoMapUrl: string;
+    }>;
+  }>;
+}
+
 export interface ParkResult {
   role: "recommended" | "travel_alternative" | "experience_alternative";
   parkId: string;

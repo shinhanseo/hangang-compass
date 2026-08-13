@@ -9,11 +9,13 @@ import { FakeRecommendationDataSource } from "./infrastructure/providers/fake/fa
 import type { CrowdDataProvider } from "./application/ports/crowd-data-provider.js";
 import type { TransitRouteProvider } from "./application/ports/transit-route-provider.js";
 import type { OriginPlaceProvider } from "./application/ports/origin-place-provider.js";
+import type { NearbyPlaceProvider } from "./application/ports/nearby-place-provider.js";
 import { LiveCrowdRecommendationDataSource } from "./infrastructure/providers/seoul/live-crowd-recommendation-data-source.js";
 import { LiveRouteRecommendationDataSource } from "./infrastructure/providers/kakao/live-route-recommendation-data-source.js";
 import { InMemoryMeetingRepository } from "./infrastructure/persistence/in-memory-meeting-repository.js";
 import { NodeCapabilityTokenService } from "./infrastructure/security/node-capability-token-service.js";
 import { FakeOriginPlaceProvider } from "./infrastructure/providers/fake/fake-origin-place-provider.js";
+import { FakeNearbyPlaceProvider } from "./infrastructure/providers/fake/fake-nearby-place-provider.js";
 import type { TravelMode, TravelPattern } from "./domain/meeting/meeting.js";
 import { setSharedOrigin } from "./application/use-cases/set-shared-origin.js";
 import { setHostParticipant } from "./application/use-cases/set-host-participant.js";
@@ -24,6 +26,7 @@ import { getHostAccessSummary } from "./application/use-cases/get-host-access-su
 import { deleteMeeting } from "./application/use-cases/delete-meeting.js";
 import { NodeRandomIndexProvider } from "./infrastructure/random/node-random-index-provider.js";
 import { closeMeetingPoll, confirmMeetingPollWinner, getHostMeetingPoll, getPublicMeetingPoll, randomizeMeetingPoll, restartMeetingPoll, startMeetingPoll, voteHostMeetingPoll, votePublicMeetingPoll } from "./application/use-cases/manage-meeting-poll.js";
+import { getHostNearbyPlaces, getParticipantNearbyPlaces } from "./application/use-cases/get-nearby-places.js";
 
 export function createApplicationServices(options: {
   crowdProvider?: CrowdDataProvider;
@@ -31,6 +34,7 @@ export function createApplicationServices(options: {
   drivingRouteProvider?: TransitRouteProvider;
   walkingRouteProvider?: TransitRouteProvider;
   originPlaceProvider?: OriginPlaceProvider;
+  nearbyPlaceProvider?: NearbyPlaceProvider;
   meetingRepository?: MeetingRepository;
 } = {}) {
   const repository = options.meetingRepository ?? new InMemoryMeetingRepository();
@@ -38,6 +42,7 @@ export function createApplicationServices(options: {
   const random = new NodeRandomIndexProvider();
   const fakeRecommendations = new FakeRecommendationDataSource();
   const origins = options.originPlaceProvider ?? new FakeOriginPlaceProvider();
+  const nearbyPlaces = options.nearbyPlaceProvider ?? new FakeNearbyPlaceProvider();
   const crowdRecommendations = options.crowdProvider
     ? new LiveCrowdRecommendationDataSource(fakeRecommendations, options.crowdProvider)
     : fakeRecommendations;
@@ -82,6 +87,10 @@ export function createApplicationServices(options: {
     restartMeetingPoll: (meetingId: string, hostToken: string | undefined) => restartMeetingPoll(repository, tokens, meetingId, hostToken),
     randomizeMeetingPoll: (meetingId: string, hostToken: string | undefined) => randomizeMeetingPoll(repository, tokens, random, meetingId, hostToken),
     confirmMeetingPollWinner: (meetingId: string, hostToken: string | undefined) => confirmMeetingPollWinner(repository, tokens, meetingId, hostToken),
+    hostNearbyPlaces: (meetingId: string, hostToken: string | undefined) =>
+      getHostNearbyPlaces(repository, tokens, nearbyPlaces, meetingId, hostToken),
+    participantNearbyPlaces: (inviteToken: string, participantToken: string | undefined) =>
+      getParticipantNearbyPlaces(repository, tokens, nearbyPlaces, inviteToken, participantToken),
   };
 }
 

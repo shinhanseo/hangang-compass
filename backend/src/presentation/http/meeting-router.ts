@@ -223,6 +223,24 @@ export function createMeetingRouter(services: ApplicationServices) {
     response.json(confirmation);
   });
 
+  router.get("/meetings/:meetingId/nearby-places", async (request, response) => {
+    const cookies = parseCookies(request.headers.cookie);
+    const result = await services.hostNearbyPlaces(
+      request.params.meetingId,
+      cookies[`hc_host_${request.params.meetingId}`],
+    );
+    if (!result) return void response.status(403).json({ error: "nearby_places_denied" });
+    if (result.status === "unavailable") return void response.status(503).json({ error: "nearby_places_unavailable" });
+    response.json({ nearby: result });
+  });
+
+  router.get("/invites/:inviteToken/nearby-places", async (request, response) => {
+    const result = await services.participantNearbyPlaces(request.params.inviteToken, participantCredential(request));
+    if (!result) return void response.status(403).json({ error: "nearby_places_denied" });
+    if (result.status === "unavailable") return void response.status(503).json({ error: "nearby_places_unavailable" });
+    response.json({ nearby: result });
+  });
+
   router.post("/meetings/:meetingId/poll", async (request, response) => {
     const cookies = parseCookies(request.headers.cookie);
     const poll = await services.startMeetingPoll(request.params.meetingId, cookies[`hc_host_${request.params.meetingId}`]);

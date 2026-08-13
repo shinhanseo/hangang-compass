@@ -4,7 +4,7 @@ import { RecommendationResult } from "../../features/recommendation/Recommendati
 import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
 import { TravelModeSelector } from "../../features/travel-mode/TravelModeSelector";
-import type { MeetingPoll, OriginPlace, ParticipantSession, RecommendationResult as Recommendation, TravelMode } from "../../shared/api/contracts";
+import type { MeetingPoll, NearbyPlaceGuide, OriginPlace, ParticipantSession, RecommendationResult as Recommendation, TravelMode } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { nextRecommendationRefreshDelay } from "../../shared/lib/recommendation-refresh";
@@ -32,6 +32,8 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [poll, setPoll] = useState<MeetingPoll | null>(null);
   const [pollBusy, setPollBusy] = useState(false);
   const [pollError, setPollError] = useState("");
+  const [nearby, setNearby] = useState<NearbyPlaceGuide | null>(null);
+  const [nearbyStatus, setNearbyStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
 
   useEffect(() => {
     api<{ meeting: InviteMeeting }>(`/api/invites/${inviteToken}`).then(async (invite) => {
@@ -117,6 +119,25 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
     const timer = window.setInterval(refreshSession, 4_000);
     return () => window.clearInterval(timer);
   }, [inviteToken, submitted, Boolean(result), recommendationFailure]);
+  useEffect(() => {
+    if (!submitted || !meeting?.confirmedParkId) {
+      setNearby(null);
+      setNearbyStatus("idle");
+      return;
+    }
+    let active = true;
+    setNearbyStatus("loading");
+    void api<{ nearby: NearbyPlaceGuide }>(`/api/invites/${inviteToken}/nearby-places`)
+      .then((response) => {
+        if (!active) return;
+        setNearby(response.nearby);
+        setNearbyStatus("ready");
+      })
+      .catch(() => {
+        if (active) setNearbyStatus("failed");
+      });
+    return () => { active = false; };
+  }, [inviteToken, submitted, meeting?.confirmedParkId]);
 
   function selectOrigin(place: OriginPlace | null) {
     setOrigin(place);
@@ -179,7 +200,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   if (!meeting) return <main className="shell app-screen"><MobileAppBar /><div className="loading-screen"><span /><p>초대장을 불러오는 중…</p></div></main>;
   if (result) return <main className="shell app-screen"><MobileAppBar />
     {viewingPublicResult && <section className="public-result-banner"><div><small>{poll ? "친구들 투표가 열렸어요" : "이미 진행 중인 약속이에요"}</small><strong>{poll ? "후보와 투표 현황을 보고 있어요" : "현재 추천을 먼저 보고 있어요"}</strong></div><button type="button" onClick={() => { setResult(null); setViewingPublicResult(false); }}>내 장소도 입력하기</button></section>}
-    <RecommendationResult result={result} confirmedParkId={meeting.confirmedParkId} updateNotice={recommendationUpdate} decisionPanel={poll ? <>
+    <RecommendationResult result={result} confirmedParkId={meeting.confirmedParkId} nearby={nearby} nearbyStatus={nearbyStatus} updateNotice={recommendationUpdate} decisionPanel={poll ? <>
       <MeetingPollPanel result={result} poll={poll} role="participant" busy={pollBusy} onVote={(parkId) => void vote(parkId)} />
       {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
     </> : undefined} />

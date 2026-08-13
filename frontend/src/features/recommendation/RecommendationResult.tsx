@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ParkResult, RecommendationResult as Recommendation } from "../../shared/api/contracts";
+import type { NearbyPlaceGuide, ParkResult, RecommendationResult as Recommendation } from "../../shared/api/contracts";
 import { AppIcon } from "../../shared/ui/AppIcon";
 import { ConfirmedParkGuide } from "./ConfirmedParkGuide";
 
@@ -146,19 +146,21 @@ function AlternativeCard({ park, confirmed = false, onConfirm }: {
   </article>;
 }
 
-export function RecommendationResult({ result, confirmedParkId, onConfirm, updateNotice, decisionPanel }: {
+export function RecommendationResult({ result, confirmedParkId, onConfirm, updateNotice, decisionPanel, nearby, nearbyStatus }: {
   result: Recommendation;
   confirmedParkId?: string | null;
   onConfirm?: (park: ParkResult) => void;
   updateNotice?: string;
   decisionPanel?: ReactNode;
+  nearby?: NearbyPlaceGuide | null;
+  nearbyStatus?: "idle" | "loading" | "ready" | "failed";
 }) {
   const confirmedPark = confirmedParkId
     ? [result.recommended, ...result.alternatives].find((park) => park.parkId === confirmedParkId) ?? null
     : null;
   return (
     <section className="result" aria-live="polite">
-      {confirmedPark && <ConfirmedParkGuide park={confirmedPark} />}
+      {confirmedPark && <ConfirmedParkGuide park={confirmedPark} nearby={nearby} nearbyStatus={nearbyStatus} />}
       <div className="result-heading">
         {updateNotice && <p className="recommendation-update" role="status"><AppIcon name="spark" size={17} />{updateNotice}</p>}
         <p className="result-kicker"><span><AppIcon name="spark" size={15} /></span>{confirmedPark ? "결정 과정 다시 보기" : "현재 추천 결과"}</p>

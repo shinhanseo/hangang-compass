@@ -13,6 +13,7 @@ import { CachedCrowdDataProvider } from "../infrastructure/providers/cached-crow
 import { CachedTransitRouteProvider } from "../infrastructure/providers/cached-transit-route-provider.js";
 import { KakaoDrivingRouteProvider } from "../infrastructure/providers/kakao/kakao-driving-route-provider.js";
 import { KakaoOriginPlaceProvider } from "../infrastructure/providers/kakao/kakao-origin-place-provider.js";
+import { KakaoNearbyPlaceProvider } from "../infrastructure/providers/kakao/kakao-nearby-place-provider.js";
 import { KakaoTransitRouteProvider } from "../infrastructure/providers/kakao/kakao-transit-route-provider.js";
 import { KakaoWalkingRouteProvider } from "../infrastructure/providers/kakao/kakao-walking-route-provider.js";
 import { SeoulCitydataCrowdProvider } from "../infrastructure/providers/seoul/seoul-citydata-crowd-provider.js";
@@ -80,6 +81,7 @@ export async function createLiveApp(environment: RuntimeEnvironment = process.en
       })
     : undefined;
   const originPlaceProvider = kakaoApiKey ? new KakaoOriginPlaceProvider({ apiKey: kakaoApiKey }) : undefined;
+  const nearbyPlaceProvider = kakaoApiKey ? new KakaoNearbyPlaceProvider({ apiKey: kakaoApiKey }) : undefined;
 
   return createApp(createApplicationServices({
     crowdProvider,
@@ -87,6 +89,7 @@ export async function createLiveApp(environment: RuntimeEnvironment = process.en
     drivingRouteProvider,
     walkingRouteProvider,
     originPlaceProvider,
+    nearbyPlaceProvider,
     meetingRepository: stores.meetingRepository,
   }));
 }

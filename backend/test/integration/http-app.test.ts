@@ -264,6 +264,21 @@ test("create, invite, join twice, and recommend without exposing origins", async
   });
   assert.equal((await confirmedParticipantSession.json()).session.confirmedParkId, selectedParkId);
 
+  assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/nearby-places`)).status, 403);
+  assert.equal((await fetch(`${baseUrl}/api/invites/${inviteToken}/nearby-places`)).status, 403);
+  const hostNearby = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}/nearby-places`, {
+    headers: { cookie: hostCookie.split(";")[0]! },
+  });
+  assert.equal(hostNearby.status, 200);
+  const nearbyBody = await hostNearby.json();
+  assert.equal(nearbyBody.nearby.parkId, selectedParkId);
+  assert.equal(nearbyBody.nearby.sections[0].places[0].name, "샘플 전망대");
+  const participantNearby = await fetch(`${baseUrl}/api/invites/${inviteToken}/nearby-places`, {
+    headers: { cookie: participantCookies[0]! },
+  });
+  assert.equal(participantNearby.status, 200);
+  assert.deepEqual(await participantNearby.json(), nearbyBody);
+
   assert.equal((await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, { method: "DELETE" })).status, 403);
   const deletionResponse = await fetch(`${baseUrl}/api/meetings/${created.meeting.id}`, {
     method: "DELETE",

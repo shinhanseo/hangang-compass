@@ -4,7 +4,7 @@ import { RecommendationResult } from "../../features/recommendation/Recommendati
 import { MeetingPollPanel } from "../../features/poll/MeetingPollPanel";
 import { PlaceSearchField } from "../../features/place-search/PlaceSearchField";
 import { TravelModeSelector } from "../../features/travel-mode/TravelModeSelector";
-import type { HostMeeting, MeetingPoll, OriginPlace, ParkResult, TravelMode } from "../../shared/api/contracts";
+import type { HostMeeting, MeetingPoll, NearbyPlaceGuide, OriginPlace, ParkResult, TravelMode } from "../../shared/api/contracts";
 import { api } from "../../shared/api/http";
 import { formatMeetingAt } from "../../shared/lib/format-meeting-at";
 import { navigate } from "../../shared/lib/navigation";
@@ -41,6 +41,8 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [pollBusy, setPollBusy] = useState(false);
   const [pollError, setPollError] = useState("");
   const [randomDraw, setRandomDraw] = useState<{ currentName: string; winnerName: string; phase: "drawing" | "winner" } | null>(null);
+  const [nearby, setNearby] = useState<NearbyPlaceGuide | null>(null);
+  const [nearbyStatus, setNearbyStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const previousResult = useRef<HostMeeting["result"]>(null);
 
   async function refresh() {
@@ -95,6 +97,25 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
     }, 4_000);
     return () => window.clearInterval(timer);
   }, [data?.meeting.poll?.status, meetingId]);
+  useEffect(() => {
+    if (!data?.meeting.confirmedParkId) {
+      setNearby(null);
+      setNearbyStatus("idle");
+      return;
+    }
+    let active = true;
+    setNearbyStatus("loading");
+    void api<{ nearby: NearbyPlaceGuide }>(`/api/meetings/${meetingId}/nearby-places`)
+      .then((response) => {
+        if (!active) return;
+        setNearby(response.nearby);
+        setNearbyStatus("ready");
+      })
+      .catch(() => {
+        if (active) setNearbyStatus("failed");
+      });
+    return () => { active = false; };
+  }, [data?.meeting.confirmedParkId, meetingId]);
 
   if (error) return <main className="shell app-screen"><MobileAppBar /><div className="state-card"><span className="state-icon">!</span><h1>접근할 수 없어요</h1><p>{error}</p><button className="primary-action" onClick={() => navigate("/")}>새 약속 만들기</button></div></main>;
   if (!data) return <main className="shell app-screen"><MobileAppBar /><div className="loading-screen"><span /><p>약속을 불러오는 중…</p></div></main>;
@@ -393,7 +414,7 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
         </div>
         {data.meeting.participants.length > 0 && <div className="participant-list"><p>참여 완료</p><div>{data.meeting.participants.map((item) => <span className="participant-chip" key={`${item.alias}-${item.isHost}`}><i>{item.alias.slice(0, 1)}</i>{item.alias}<small>{item.isHost ? "나 · " : ""}{item.travelMode === "car" ? "자가용" : "대중교통"}</small></span>)}</div></div>}
       </section>
-      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} onConfirm={data.meeting.poll ? undefined : (park) => void confirmPark(park)} updateNotice={recommendationUpdate} decisionPanel={(data.meeting.poll || !data.meeting.confirmedParkId) ? <>
+      {data.meeting.result ? <RecommendationResult result={data.meeting.result} confirmedParkId={data.meeting.confirmedParkId} nearby={nearby} nearbyStatus={nearbyStatus} onConfirm={data.meeting.poll ? undefined : (park) => void confirmPark(park)} updateNotice={recommendationUpdate} decisionPanel={(data.meeting.poll || !data.meeting.confirmedParkId) ? <>
         <MeetingPollPanel
           result={data.meeting.result}
           poll={data.meeting.poll}
