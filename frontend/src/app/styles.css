@@ -66,6 +66,14 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .section-title h2 { margin: 1px 0 4px; font-size: 18px; letter-spacing: -.035em; }
 .section-title p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .field-label { margin-top: 3px; color: #3f413a; font-size: 13px; font-weight: 750; }
+.same-place-choice { display: grid; grid-template-columns: 24px 1fr; gap: 11px; align-items: center; min-height: 56px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 14px; background: #f7f7f2; cursor: pointer; }
+.same-place-choice input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.same-place-check { display: grid; place-items: center; width: 24px; height: 24px; border: 1.5px solid #a9ad95; border-radius: 7px; color: transparent; background: white; font-size: 14px; font-weight: 900; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.same-place-choice input:checked + .same-place-check { border-color: var(--olive); background: var(--olive); color: white; }
+.same-place-choice input:focus-visible + .same-place-check { outline: 3px solid #d4de95; outline-offset: 2px; }
+.same-place-choice > span:last-child { display: grid; gap: 3px; }
+.same-place-choice strong { color: #292b25; font-size: 14px; }
+.same-place-choice small { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .app-input, .input-with-icon, .place-field > input, input[aria-label="공유 링크"] { width: 100%; min-height: 54px; border: 1px solid #d9dacf; border-radius: 15px; color: var(--ink); background: #fafaf7; }
 .app-input { padding: 0 15px; }
 .input-with-icon { display: flex; padding: 0 14px; align-items: center; }

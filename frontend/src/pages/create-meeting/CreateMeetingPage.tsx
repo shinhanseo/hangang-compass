@@ -117,7 +117,7 @@ export function CreateMeetingPage() {
             </label>
             <label className={travelPattern === "individual_round_trip" ? "choice-card selected" : "choice-card"}>
               <input type="radio" name="travel-pattern" value="individual_round_trip" checked={travelPattern === "individual_round_trip"} onChange={() => setTravelPattern("individual_round_trip")} />
-              <span className="choice-symbol">각자</span><span><strong>각자 출발해 돌아가요</strong><small>각자의 출발지에서 만나고 같은 곳으로 다시 돌아가요.</small></span><i />
+              <span className="choice-symbol">각자</span><span><strong>각자 출발해 돌아가요</strong><small>기본은 출발 장소로 돌아가고, 약속 후 다른 곳으로 가도 돼요.</small></span><i />
             </label>
           </fieldset>
           <button className="primary-action sheet-confirm" type="button" onClick={() => setPatternSheetOpen(false)}>이 방식으로 할게요</button>

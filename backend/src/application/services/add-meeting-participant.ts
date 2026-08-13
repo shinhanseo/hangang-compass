@@ -22,7 +22,8 @@ export async function addMeetingParticipant(
   if (!requestedOrigin) return null;
   const origin = await origins.resolve({ id: requestedOrigin.placeId, name: requestedOrigin.placeName });
   if (!origin) return null;
-  const requestedDestination = meeting.travelPattern === "individual_round_trip"
+  const hasSeparateDestination = Boolean(input.destinationPlaceId && input.destinationPlaceName);
+  const requestedDestination = meeting.travelPattern === "individual_round_trip" && !hasSeparateDestination
     ? { id: origin.id, name: origin.name }
     : { id: input.destinationPlaceId ?? "", name: input.destinationPlaceName ?? "" };
   const destination = await origins.resolve(requestedDestination);

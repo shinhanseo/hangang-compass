@@ -24,6 +24,8 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
   const [savingOrigin, setSavingOrigin] = useState(false);
   const [originError, setOriginError] = useState("");
   const [hostPlace, setHostPlace] = useState<OriginPlace | null>(null);
+  const [hostDestination, setHostDestination] = useState<OriginPlace | null>(null);
+  const [hostReturnsToOrigin, setHostReturnsToOrigin] = useState(true);
   const [hostTravelMode, setHostTravelMode] = useState<TravelMode>("public_transit");
   const [savingHostPlace, setSavingHostPlace] = useState(false);
   const [hostPlaceError, setHostPlaceError] = useState("");
@@ -193,8 +195,8 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
           alias: "방장",
           originPlaceId: sharedOriginPattern ? undefined : hostPlace.id,
           originPlaceName: sharedOriginPattern ? undefined : hostPlace.name,
-          destinationPlaceId: sharedOriginPattern ? hostPlace.id : undefined,
-          destinationPlaceName: sharedOriginPattern ? hostPlace.name : undefined,
+          destinationPlaceId: sharedOriginPattern ? hostPlace.id : hostReturnsToOrigin ? undefined : hostDestination?.id,
+          destinationPlaceName: sharedOriginPattern ? hostPlace.name : hostReturnsToOrigin ? undefined : hostDestination?.name,
           travelMode: hostTravelMode,
         }),
       });
@@ -348,18 +350,34 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
       {!needsSharedOrigin && data.meeting.travelPattern === "shared_origin" && <section className="origin-banner"><span className="banner-icon"><AppIcon name="map" /></span><span><small>함께 출발</small><strong>{data.meeting.sharedOriginName}</strong></span><span className="check-badge">✓</span></section>}
       {needsHostPlace && !needsSharedOrigin && inviteToken && <section className="task-card priority-task host-travel-card">
         <div className="task-kicker"><span>{data.meeting.travelPattern === "shared_origin" ? "다음 할 일" : "먼저 할 일"}</span><b>{data.meeting.travelPattern === "shared_origin" ? "2/3" : "1/2"}</b></div>
-        <div className="task-heading"><span className="task-icon"><AppIcon name="map" /></span><div><h2>{data.meeting.travelPattern === "shared_origin" ? "방장님의 귀가 장소" : "방장님의 출발·귀가 장소"}</h2><p>방장님도 이동시간 비교에 포함할게요.</p></div></div>
+        <div className="task-heading"><span className="task-icon"><AppIcon name="map" /></span><div><h2>{data.meeting.travelPattern === "shared_origin" ? "방장님의 귀가 장소" : "방장님의 이동 장소"}</h2><p>방장님도 이동시간 비교에 포함할게요.</p></div></div>
         <PlaceSearchField
           searchPath={`/api/invites/${inviteToken}/places`}
           id="host-travel-place"
-          label={data.meeting.travelPattern === "shared_origin" ? "약속 후 이동할 장소" : "출발하고 돌아갈 장소"}
-          help={data.meeting.travelPattern === "shared_origin" ? "집 주소 대신 귀가할 때 이용할 가까운 역·학교·건물 같은 공개 장소를 골라주세요." : "공개 장소 하나를 갈 때와 귀가에 함께 사용해 불필요한 검색을 줄여요."}
+          label={data.meeting.travelPattern === "shared_origin" ? "약속 후 이동할 장소" : "만나러 출발할 장소"}
+          help={data.meeting.travelPattern === "shared_origin" ? "집 주소 대신 귀가할 때 이용할 가까운 역·학교·건물 같은 공개 장소를 골라주세요." : "정확한 집 주소 대신 가까운 역·학교·건물 같은 공개 장소를 골라주세요."}
           selected={hostPlace}
           onSelect={setHostPlace}
         />
+        {data.meeting.travelPattern === "individual_round_trip" && <label className="same-place-choice">
+          <input type="checkbox" checked={hostReturnsToOrigin} onChange={(event) => {
+            setHostReturnsToOrigin(event.target.checked);
+            if (event.target.checked) setHostDestination(null);
+          }} />
+          <span className="same-place-check" aria-hidden="true">✓</span>
+          <span><strong>출발 장소로 돌아가요</strong><small>약속 후 다른 곳으로 간다면 체크를 해제하세요.</small></span>
+        </label>}
+        {data.meeting.travelPattern === "individual_round_trip" && !hostReturnsToOrigin && <PlaceSearchField
+          searchPath={`/api/invites/${inviteToken}/places`}
+          id="host-destination-place"
+          label="약속 후 이동할 장소"
+          help="귀가할 때 이용할 가까운 역·학교·건물 같은 공개 장소를 골라주세요."
+          selected={hostDestination}
+          onSelect={setHostDestination}
+        />}
         <TravelModeSelector value={hostTravelMode} onChange={setHostTravelMode} />
         <p className="privacy-line host-privacy"><AppIcon name="lock" size={15} />이 장소는 친구들에게 공개되지 않아요.</p>
-        <button className="primary-action" onClick={() => void saveHostPlace()} disabled={!hostPlace || savingHostPlace}>{savingHostPlace ? "내 장소를 저장하는 중…" : "내 이동 장소 저장하기"}</button>
+        <button className="primary-action" onClick={() => void saveHostPlace()} disabled={!hostPlace || (data.meeting.travelPattern === "individual_round_trip" && !hostReturnsToOrigin && !hostDestination) || savingHostPlace}>{savingHostPlace ? "내 장소를 저장하는 중…" : "내 이동 장소 저장하기"}</button>
         {hostPlaceError && <p className="error">{hostPlaceError}</p>}
       </section>}
       <section className={`task-card invite-card${setupIncomplete ? " locked" : ""}`}>

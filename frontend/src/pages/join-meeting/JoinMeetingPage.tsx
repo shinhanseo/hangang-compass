@@ -17,6 +17,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [alias, setAlias] = useState("");
   const [origin, setOrigin] = useState<OriginPlace | null>(null);
   const [destination, setDestination] = useState<OriginPlace | null>(null);
+  const [returnToOrigin, setReturnToOrigin] = useState(true);
   const [travelMode, setTravelMode] = useState<TravelMode>("public_transit");
   const [result, setResult] = useState<Recommendation | null>(null);
   const [count, setCount] = useState(0);
@@ -113,6 +114,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
 
   function selectOrigin(place: OriginPlace | null) {
     setOrigin(place);
+    if (returnToOrigin) setDestination(null);
   }
 
   async function submit(event: FormEvent) {
@@ -204,10 +206,26 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       {!sharedOrigin && <PlaceSearchField
         searchPath={`/api/invites/${inviteToken}/places`}
         id="origin-place"
-        label="출발하고 돌아갈 장소"
-        help="정확한 집 주소 대신 가까운 역·학교·건물·공공장소 하나를 선택해 갈 때와 귀가에 함께 사용해요."
+        label="만나러 출발할 장소"
+        help="정확한 집 주소 대신 가까운 역·학교·건물·공공장소를 선택해 주세요."
         selected={origin}
         onSelect={selectOrigin}
+      />}
+      {!sharedOrigin && <label className="same-place-choice">
+        <input type="checkbox" checked={returnToOrigin} onChange={(event) => {
+          setReturnToOrigin(event.target.checked);
+          if (event.target.checked) setDestination(null);
+        }} />
+        <span className="same-place-check" aria-hidden="true">✓</span>
+        <span><strong>출발 장소로 돌아가요</strong><small>약속 후 다른 곳으로 간다면 체크를 해제하세요.</small></span>
+      </label>}
+      {!sharedOrigin && !returnToOrigin && <PlaceSearchField
+        searchPath={`/api/invites/${inviteToken}/places`}
+        id="destination-place"
+        label="약속 후 이동할 장소"
+        help="귀가할 때 이용할 가까운 역·학교·건물·공공장소를 선택해 주세요."
+        selected={destination}
+        onSelect={setDestination}
       />}
       {sharedOrigin && <PlaceSearchField searchPath={`/api/invites/${inviteToken}/places`} id="destination-place" label="약속 후 각자 이동할 장소" help="귀가할 집 주소가 아니라 가까운 공개 장소를 선택해 주세요." selected={destination} onSelect={setDestination} />}
       </section>
@@ -222,7 +240,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
         {isSubmitting && <p className="submit-progress" role="status">11개 공원의 이동시간과 혼잡도를 비교하고 있어요.</p>}
         <button
           className="primary-action join-submit"
-          disabled={isSubmitting || !alias.trim() || (sharedOrigin ? !meeting.sharedOriginName || !destination : !origin)}
+          disabled={isSubmitting || !alias.trim() || (sharedOrigin ? !meeting.sharedOriginName || !destination : !origin || (!returnToOrigin && !destination))}
           aria-busy={isSubmitting}
         >
           {isSubmitting ? <><span className="button-spinner" aria-hidden="true" />추천 공원 계산 중…</> : <>이동 장소 제출하기<AppIcon name="chevron" /></>}
