@@ -89,6 +89,8 @@ npm run dev:api
 
 약속 저장소는 `DATABASE_URL`이 있으면 Supabase PostgreSQL을, 없으면 루트 `.data/meetings.sqlite`를 사용합니다. Supabase 연결 문자열은 서버 전용이며 브라우저 번들에 포함하지 않습니다. IPv4 환경의 장기 실행 Node 서버에서는 Session pooler, 서버리스에서는 Transaction pooler 연결 문자열을 사용합니다.
 
+운영 배포는 Vercel의 GitHub 연동을 사용합니다. `main` 푸시는 운영 주소를, 다른 브랜치는 Preview 주소를 자동 배포하며 Vite 정적 앱과 Express Function을 같은 origin에서 제공합니다. 최초 연결과 환경변수·카카오 도메인 설정은 [Vercel deployment guide](./docs/DEPLOYMENT.md)를 따릅니다.
+
 ## Repository structure
 
 ```text

@@ -2,7 +2,7 @@
 
 ## 1. 문서 상태
 
-제품 형태와 애플리케이션 스택은 모바일 우선 반응형 웹앱, TypeScript 기반 React 클라이언트, Node.js/Express API로 확정했다. 약속 데이터의 배포 저장소는 무료 Supabase PostgreSQL로 결정했고 로컬 개발은 SQLite를 유지한다. 웹·API 배포 서비스는 아직 확정하지 않았다. 이 문서는 추천 구조와 결정 기준을 제안하며, 스파이크 결과 전의 선택을 확정 사실로 다루지 않는다.
+제품 형태와 애플리케이션 스택은 모바일 우선 반응형 웹앱, TypeScript 기반 React 클라이언트, Node.js/Express API로 확정했다. 약속 데이터의 배포 저장소는 무료 Supabase PostgreSQL로 결정했고 로컬 개발은 SQLite를 유지한다. 웹과 API는 한 Vercel 프로젝트에서 Vite 정적 배포와 Express Function으로 제공한다. 이 문서는 추천 구조와 결정 기준을 제안하며, 스파이크 결과 전의 선택을 확정 사실로 다루지 않는다.
 
 ## 2. 설계 목표
 
@@ -116,7 +116,7 @@
 - **계약:** 클라이언트와 API가 공유하는 런타임 스키마 및 타입
 - **추천 도메인:** Express 라우트와 분리된 순수 TypeScript 모듈
 
-단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. 이는 배포 단위를 확정하는 결정이 아니며, 초기에는 웹과 API를 함께 또는 따로 배포할 수 있다.
+단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. Vercel 배포 진입점 `api/server.ts`는 동일한 live composition을 불러오는 얇은 어댑터이고, 브라우저와 API는 같은 HTTPS origin을 사용한다.
 
 저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
 
@@ -170,7 +170,7 @@
 
 ## 7. 백엔드 인프라 선택 원칙
 
-API 런타임은 Node.js/Express, 배포 데이터베이스는 Supabase PostgreSQL로 확정했다. 별도 ORM 없이 `pg` 어댑터를 repository port 뒤에 두며, 배포 제품은 아직 선택하지 않는다. Node.js 실행이 가능한 무료 서버/컨테이너 조합을 우선 비교한다.
+API 런타임은 Vercel Node.js Function의 Express, 배포 데이터베이스는 Supabase PostgreSQL로 확정했다. 별도 ORM 없이 `pg` 어댑터를 repository port 뒤에 두고 서버리스용 Transaction pooler를 사용한다. Vercel 환경에서 `DATABASE_URL`이 없으면 임시 파일 DB로 대체하지 않고 기동에 실패한다.
 
 필수 조건:
 

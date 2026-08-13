@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 
 import { createApplicationServices, type ApplicationServices } from "../../composition-root.js";
 import { createMeetingRouter } from "./meeting-router.js";
@@ -20,5 +20,13 @@ export function createApp(services: ApplicationServices = createApplicationServi
   app.use((_request, response) => {
     response.status(404).json({ error: "not_found" });
   });
+  const errorHandler: ErrorRequestHandler = (_error, _request, response, next) => {
+    if (response.headersSent) {
+      next(_error);
+      return;
+    }
+    response.status(500).json({ error: "internal_error" });
+  };
+  app.use(errorHandler);
   return app;
 }

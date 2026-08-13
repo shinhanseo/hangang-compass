@@ -18,7 +18,7 @@
     "security:check": "node scripts/check-repository-secrets.mjs",
     "spike:seoul-crowd": "tsx scripts/inspect-seoul-crowd.ts",
     "test": "tsx --test scripts/*.test.mjs && npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tsconfig.vercel.json"
   },
   "devDependencies": {
     "@types/node": "22.20.1",
