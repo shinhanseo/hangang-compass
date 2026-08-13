@@ -118,7 +118,7 @@
 
 단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. Vercel 배포 진입점 `api/server.ts`는 동일한 live composition을 불러오는 얇은 어댑터이고, 브라우저와 API는 같은 HTTPS origin을 사용한다.
 
-저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 성공한 추천 결과는 `meeting_id + 참여자 수 + provisional/current 단계` 버전으로 별도 저장하고 약속 삭제·만료 시 함께 삭제한다. PostgreSQL은 advisory lock으로 같은 버전의 동시 계산을 한 번으로 합친다. 원본 공급자 응답과 좌표는 이 결과 저장소에 넣지 않는다. 확정 공원 가이드는 저장된 추천 후보의 공식 경험 카탈로그를 재사용하고, 주변 장소는 서버에 수집·저장하지 않은 채 사용자가 카카오맵 검색 링크를 명시적으로 열도록 한다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
+저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 성공한 추천 결과는 `meeting_id + 참여자 수 + provisional/current 단계` 버전으로 별도 저장하고 약속 삭제·만료 시 함께 삭제한다. PostgreSQL은 Transaction pooler에서도 같은 세션을 보장하는 트랜잭션 범위 advisory lock으로 같은 버전의 동시 계산을 한 번으로 합친다. 별도의 `TransitRouteStore`는 공급자와 장소 식별자 조합의 SHA-256 해시를 키로 정규화된 경로 요약만 성공 2시간·실패 30초 보관한다. 공급자 응답 원문·좌표·장소명은 넣지 않으며, 공급자별 서울 날짜 단위 요청·성공·실패·한도 초과 횟수를 저장한다. PostgreSQL 트랜잭션 잠금과 SQLite 프로세스 내 동시 요청 병합으로 같은 경로 계산을 하나로 합친다. 확정 공원 가이드는 저장된 추천 후보의 공식 경험 카탈로그를 재사용하고, 주변 장소는 서버에 수집·저장하지 않은 채 사용자가 카카오맵 검색 링크를 명시적으로 열도록 한다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
 
 프론트엔드는 Supabase Data API에 직접 접근하지 않는다. Express API만 서버 전용 `DATABASE_URL`로 연결하므로 Supabase Auth·Realtime·Storage와 공개 service-role 키는 현재 범위에 포함하지 않는다. IPv4 장기 실행 서버는 Session pooler, 서버리스는 Transaction pooler를 사용한다. 무료 프로젝트의 저활동 일시 정지와 자동 백업 부재를 MVP 제한으로 기록하고, 유료 전환은 자동으로 수행하지 않는다.
 
@@ -191,6 +191,8 @@ API 런타임은 Vercel Node.js Function의 Express, 배포 데이터베이스�
 - 부분 실패 시 추천 가능 여부를 필수 데이터 행렬로 판정한다.
 - 이전 결과를 사용할 경우 조회 시각을 명시하고 현재 값으로 위장하지 않는다.
 - 성공한 추천 결과는 참여자 구성과 `provisional/current` 단계별로 영속 저장한다. 같은 단계의 새로고침·재접속·투표·확정은 저장 결과를 사용하고, 참여자 추가 또는 12시간 경계 진입 때만 새 버전을 계산한다.
+- 대중교통·자동차·도보 경로는 공급자별 네임스페이스와 비식별 경로 해시로 SQLite/PostgreSQL에 성공 2시간·실패 30초의 유효기간으로 캐시한다. 만료 레코드는 서버 초기화와 이후 경로 요청에서 정리한다. 서버 재시작과 서버리스 인스턴스가 달라도 같은 출발지·도착지 조합을 재사용한다.
+- 외부 호출을 시작할 때 공급자별 일일 사용량을 원자적으로 선점한다. 안전 한도에 도달하면 `quota_guard`, 공급자가 실제 일일 한도 초과를 반환하면 그날 이후 `quota_exceeded`로 회로를 열어 나머지 후보 호출을 중단한다.
 - 외부 공급자 장애를 관찰할 수 있는 구조화 로그와 최소 상태 지표를 둔다.
 
 ### 2단계 추천 상태

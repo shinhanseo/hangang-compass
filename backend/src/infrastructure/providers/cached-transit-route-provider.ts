@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+
+import type { TransitRouteStore } from "../../application/ports/transit-route-store.js";
 import type { TransitRouteProvider } from "../../application/ports/transit-route-provider.js";
 import type { TransitEndpoint, TransitRouteResult } from "../../domain/transit/transit-route.js";
 
@@ -9,6 +12,8 @@ export class CachedTransitRouteProvider implements TransitRouteProvider {
   readonly #unavailableTtlMs: number;
   readonly #maxRequestsPerDay: number;
   readonly #now: () => number;
+  readonly #store?: TransitRouteStore;
+  readonly #providerKey?: string;
   readonly #cache = new Map<string, Entry>();
   readonly #inFlight = new Map<string, Promise<TransitRouteResult>>();
   #budgetDay = "";
@@ -16,7 +21,14 @@ export class CachedTransitRouteProvider implements TransitRouteProvider {
 
   constructor(
     source: TransitRouteProvider,
-    options: { ttlMs: number; unavailableTtlMs?: number; maxRequestsPerDay: number; now?: () => number },
+    options: {
+      ttlMs: number;
+      unavailableTtlMs?: number;
+      maxRequestsPerDay: number;
+      now?: () => number;
+      store?: TransitRouteStore;
+      providerKey?: string;
+    },
   ) {
     if (options.ttlMs <= 0 || (options.unavailableTtlMs ?? 30_000) <= 0 || options.maxRequestsPerDay <= 0) {
       throw new Error("transit_cache_options_required");
@@ -26,6 +38,9 @@ export class CachedTransitRouteProvider implements TransitRouteProvider {
     this.#unavailableTtlMs = options.unavailableTtlMs ?? 30_000;
     this.#maxRequestsPerDay = options.maxRequestsPerDay;
     this.#now = options.now ?? Date.now;
+    this.#store = options.store;
+    this.#providerKey = options.providerKey;
+    if (Boolean(this.#store) !== Boolean(this.#providerKey)) throw new Error("transit_route_store_provider_required");
   }
 
   #day(): string {
@@ -41,16 +56,26 @@ export class CachedTransitRouteProvider implements TransitRouteProvider {
     const existing = this.#inFlight.get(key);
     if (existing) return existing;
 
-    const day = this.#day();
-    if (day !== this.#budgetDay) {
-      this.#budgetDay = day;
-      this.#requestCount = 0;
+    if (!this.#store) {
+      const day = this.#day();
+      if (day !== this.#budgetDay) {
+        this.#budgetDay = day;
+        this.#requestCount = 0;
+      }
+      if (this.#requestCount >= this.#maxRequestsPerDay) {
+        return { status: "unavailable", reason: "quota_guard" };
+      }
+      this.#requestCount += 1;
     }
-    if (this.#requestCount >= this.#maxRequestsPerDay) {
-      return { status: "unavailable", reason: "quota_guard" };
-    }
-    this.#requestCount += 1;
-    const request = this.#source.routeFor(origin, destination)
+    const calculate = () => this.#source.routeFor(origin, destination);
+    const request = (this.#store && this.#providerKey
+      ? this.#store.routeResult(this.#providerKey, persistentRouteKey(origin.id, destination.id), {
+          successTtlMs: this.#ttlMs,
+          failureTtlMs: this.#unavailableTtlMs,
+          maxRequestsPerDay: this.#maxRequestsPerDay,
+          now: new Date(this.#now()),
+        }, calculate)
+      : calculate())
       .then((result) => {
         this.#cache.set(key, {
           result,
@@ -62,4 +87,8 @@ export class CachedTransitRouteProvider implements TransitRouteProvider {
     this.#inFlight.set(key, request);
     return request;
   }
+}
+
+function persistentRouteKey(originId: string, destinationId: string): string {
+  return createHash("sha256").update(`${originId}\0${destinationId}`).digest("hex");
 }

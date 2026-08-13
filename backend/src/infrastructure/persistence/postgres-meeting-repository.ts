@@ -115,20 +115,27 @@ export class PostgresMeetingRepository implements MeetingRepository {
     const lockKey = `${meetingId}:${revision}`;
     const client = await this.#pool.connect();
     try {
-      await client.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKey]);
       const cached = await client.query<RecommendationRow>(
         "SELECT payload FROM recommendation_views WHERE meeting_id = $1 AND revision = $2",
         [meetingId, revision],
       );
-      if (cached.rows[0]) return cached.rows[0].payload as RecommendationResultView;
+      if (cached.rows[0]) {
+        await client.query("COMMIT");
+        return cached.rows[0].payload as RecommendationResultView;
+      }
       const result = await calculate();
       if (result) await client.query(`
         INSERT INTO recommendation_views (meeting_id, revision, payload, created_at) VALUES ($1, $2, $3::jsonb, $4)
         ON CONFLICT(meeting_id, revision) DO UPDATE SET payload = excluded.payload, created_at = excluded.created_at
       `, [meetingId, revision, JSON.stringify(result), new Date().toISOString()]);
+      await client.query("COMMIT");
       return result;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
     } finally {
-      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]).catch(() => undefined);
       client.release();
     }
   }

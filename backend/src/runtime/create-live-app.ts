@@ -4,8 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { createApplicationServices } from "../composition-root.js";
 import type { MeetingRepository } from "../application/ports/meeting-repository.js";
+import type { TransitRouteStore } from "../application/ports/transit-route-store.js";
 import { SqliteMeetingRepository } from "../infrastructure/persistence/sqlite-meeting-repository.js";
+import { SqliteTransitRouteStore } from "../infrastructure/persistence/sqlite-transit-route-store.js";
 import { PostgresMeetingRepository } from "../infrastructure/persistence/postgres-meeting-repository.js";
+import { PostgresTransitRouteStore } from "../infrastructure/persistence/postgres-transit-route-store.js";
 import { CachedCrowdDataProvider } from "../infrastructure/providers/cached-crowd-data-provider.js";
 import { CachedTransitRouteProvider } from "../infrastructure/providers/cached-transit-route-provider.js";
 import { KakaoDrivingRouteProvider } from "../infrastructure/providers/kakao/kakao-driving-route-provider.js";
@@ -24,12 +27,19 @@ export function databaseTarget(environment: RuntimeEnvironment) {
   return { kind: "sqlite" as const, path: resolve(environment.MEETING_DATABASE_PATH ?? defaultPath) };
 }
 
-async function meetingRepository(environment: RuntimeEnvironment): Promise<MeetingRepository> {
+async function persistence(environment: RuntimeEnvironment): Promise<{
+  meetingRepository: MeetingRepository;
+  transitRouteStore: TransitRouteStore;
+}> {
   const target = databaseTarget(environment);
-  if (target.kind === "sqlite") return new SqliteMeetingRepository(target.path);
-  const repository = new PostgresMeetingRepository(target.connectionString);
-  await repository.initialize();
-  return repository;
+  if (target.kind === "sqlite") return {
+    meetingRepository: new SqliteMeetingRepository(target.path),
+    transitRouteStore: new SqliteTransitRouteStore(target.path),
+  };
+  const meetingRepository = new PostgresMeetingRepository(target.connectionString);
+  const transitRouteStore = new PostgresTransitRouteStore(target.connectionString);
+  await Promise.all([meetingRepository.initialize(), transitRouteStore.initialize()]);
+  return { meetingRepository, transitRouteStore };
 }
 
 export async function createLiveApp(environment: RuntimeEnvironment = process.env) {
@@ -38,7 +48,7 @@ export async function createLiveApp(environment: RuntimeEnvironment = process.en
 
   const seoulApiKey = environment.SEOUL_OPEN_DATA_KEY ?? process.env.SEOUL_OPEN_DATA_KEY;
   const kakaoApiKey = environment.KAKAO_REST_API_KEY ?? process.env.KAKAO_REST_API_KEY;
-  const repository = await meetingRepository({ ...process.env, ...environment });
+  const stores = await persistence({ ...process.env, ...environment });
   const crowdProvider = seoulApiKey
     ? new CachedCrowdDataProvider(new SeoulCitydataCrowdProvider({
         apiKey: seoulApiKey,
@@ -49,18 +59,24 @@ export async function createLiveApp(environment: RuntimeEnvironment = process.en
     ? new CachedTransitRouteProvider(new KakaoTransitRouteProvider({ apiKey: kakaoApiKey }), {
         ttlMs: 2 * 60 * 60_000,
         maxRequestsPerDay: 900,
+        store: stores.transitRouteStore,
+        providerKey: "kakao_public_transit",
       })
     : undefined;
   const drivingRouteProvider = kakaoApiKey
     ? new CachedTransitRouteProvider(new KakaoDrivingRouteProvider({ apiKey: kakaoApiKey }), {
         ttlMs: 2 * 60 * 60_000,
         maxRequestsPerDay: 9_000,
+        store: stores.transitRouteStore,
+        providerKey: "kakao_driving",
       })
     : undefined;
   const walkingRouteProvider = kakaoApiKey
     ? new CachedTransitRouteProvider(new KakaoWalkingRouteProvider({ apiKey: kakaoApiKey }), {
         ttlMs: 2 * 60 * 60_000,
         maxRequestsPerDay: 900,
+        store: stores.transitRouteStore,
+        providerKey: "kakao_walking",
       })
     : undefined;
   const originPlaceProvider = kakaoApiKey ? new KakaoOriginPlaceProvider({ apiKey: kakaoApiKey }) : undefined;
@@ -71,6 +87,6 @@ export async function createLiveApp(environment: RuntimeEnvironment = process.en
     drivingRouteProvider,
     walkingRouteProvider,
     originPlaceProvider,
-    meetingRepository: repository,
+    meetingRepository: stores.meetingRepository,
   }));
 }
