@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import type { ApplicationServices } from "../../composition-root.js";
-import { capabilityCookieOptions, parseCookies } from "./cookies.js";
+import { capabilityCookieOptions, parseCookies, participantCapabilityCookieOptions } from "./cookies.js";
 import { isFutureMeetingTime, participantInput, placeQuery, travelPattern } from "./validation.js";
 
 export function createMeetingRouter(services: ApplicationServices) {
@@ -91,7 +91,7 @@ export function createMeetingRouter(services: ApplicationServices) {
       response.status(400).json({ error: "join_failed" });
       return;
     }
-    response.cookie("hc_participant", joined.participantToken, { ...capabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
+    response.cookie("hc_participant", joined.participantToken, { ...participantCapabilityCookieOptions(), path: `/api/invites/${request.params.inviteToken}` });
     const { participantToken: _participantToken, meetingId: _meetingId, ...view } = joined;
     response.status(201).json(view);
   });

@@ -92,7 +92,11 @@ test("create, invite, join twice, and recommend without exposing origins", async
     });
     assert.equal(joinResponse.status, 201);
     assert.equal(JSON.stringify(await joinResponse.json()).includes("participantToken"), false);
-    const participantCookie = joinResponse.headers.get("set-cookie")?.match(/hc_participant=[^;]+/u)?.[0];
+    const participantSetCookie = joinResponse.headers.get("set-cookie") ?? "";
+    assert.match(participantSetCookie, /SameSite=Lax/u);
+    assert.match(participantSetCookie, /HttpOnly/u);
+    assert.match(participantSetCookie, new RegExp(`Path=/api/invites/${inviteToken}`, "u"));
+    const participantCookie = participantSetCookie.match(/hc_participant=[^;]+/u)?.[0];
     assert.ok(participantCookie);
     participantCookies.push(participantCookie);
   }
