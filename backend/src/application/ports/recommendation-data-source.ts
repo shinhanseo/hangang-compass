@@ -14,6 +14,7 @@ export interface RecommendationDataSource {
     source: "fake" | "kakao_public_transit" | "kakao_car" | "kakao_mixed";
     calculatedAt: string | null;
   };
+  routeFailureFor(participants: Participant[]): "quota_exceeded" | "quota_guard" | "route_unavailable" | null;
   arrivalCrowdFor(parkId: string, meetingAt: string): {
     level: CrowdLevel | null;
     label: string;

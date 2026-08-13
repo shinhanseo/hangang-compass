@@ -66,6 +66,16 @@ test("maps no-route and network failures without exposing request details", asyn
   assert.deepEqual(await failed.routeFor(origin, destination), { status: "unavailable", reason: "network_error" });
 });
 
+test("distinguishes Kakao daily quota exhaustion from generic HTTP failures", async () => {
+  const provider = new KakaoTransitRouteProvider({
+    apiKey: "test-key",
+    fetcher: async (input) => new URL(input).pathname.includes("keyword")
+      ? Response.json({ documents: [{ place_name: "홍대입구역 여의도안내센터", x: "1", y: "2", road_address_name: "서울 영등포구 여의동로 330" }] })
+      : Response.json({ code: -10, message: "API limit has been exceeded." }, { status: 400 }),
+  });
+  assert.deepEqual(await provider.routeFor(origin, destination), { status: "unavailable", reason: "quota_exceeded" });
+});
+
 test("does not permanently cache an unresolved coordinate", async () => {
   let originSearches = 0;
   const provider = new KakaoTransitRouteProvider({

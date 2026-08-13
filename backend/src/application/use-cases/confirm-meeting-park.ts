@@ -14,7 +14,7 @@ export async function confirmMeetingPark(
 ) {
   const meeting = await repository.findById(meetingId);
   if (!isAuthorizedHost(meeting, tokens, hostToken)) return null;
-  const result = await buildRecommendationView(meeting, recommendations);
+  const result = await buildRecommendationView(meeting, recommendations, repository);
   const candidates = result ? [result.recommended, ...result.alternatives] : [];
   const selected = candidates.find((candidate) => candidate.parkId === parkId);
   if (!selected) return null;

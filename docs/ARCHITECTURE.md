@@ -118,7 +118,7 @@
 
 단일 저장소 안에 최상위 `frontend`와 `backend` 경계를 둔다. 백엔드 내부는 domain, application, infrastructure, presentation 계층으로 의존성 방향을 고정한다. Vercel 배포 진입점 `api/server.ts`는 동일한 live composition을 불러오는 얇은 어댑터이고, 브라우저와 API는 같은 HTTPS origin을 사용한다.
 
-저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
+저장소는 application의 비동기 repository port 뒤에 둔다. `DATABASE_URL`이 설정된 배포 서버는 Supabase PostgreSQL을 사용하고, 로컬 기본값은 Node 22.13 이상에서 제공되는 내장 SQLite와 루트 `.data/meetings.sqlite`다. 테스트는 격리를 위해 메모리 저장소 또는 임시 SQLite를 주입한다. 두 구현 모두 같은 만료 규칙과 capability 해시 색인을 사용하며 토큰 원문·정밀 좌표·집 주소는 저장하지 않는다. 성공한 추천 결과는 `meeting_id + 참여자 수 + provisional/current 단계` 버전으로 별도 저장하고 약속 삭제·만료 시 함께 삭제한다. PostgreSQL은 advisory lock으로 같은 버전의 동시 계산을 한 번으로 합친다. 원본 공급자 응답과 좌표는 이 결과 저장소에 넣지 않는다. PostgreSQL 스키마는 `backend/migrations`에 기록하고 서버 시작 시 누락 테이블과 인덱스를 멱등 생성한다.
 
 프론트엔드는 Supabase Data API에 직접 접근하지 않는다. Express API만 서버 전용 `DATABASE_URL`로 연결하므로 Supabase Auth·Realtime·Storage와 공개 service-role 키는 현재 범위에 포함하지 않는다. IPv4 장기 실행 서버는 Session pooler, 서버리스는 Transaction pooler를 사용한다. 무료 프로젝트의 저활동 일시 정지와 자동 백업 부재를 MVP 제한으로 기록하고, 유료 전환은 자동으로 수행하지 않는다.
 
@@ -190,6 +190,7 @@ API 런타임은 Vercel Node.js Function의 Express, 배포 데이터베이스�
 - 재시도는 횟수 제한과 지수형 지연을 적용하고 호출 제한 응답을 존중한다.
 - 부분 실패 시 추천 가능 여부를 필수 데이터 행렬로 판정한다.
 - 이전 결과를 사용할 경우 조회 시각을 명시하고 현재 값으로 위장하지 않는다.
+- 성공한 추천 결과는 참여자 구성과 `provisional/current` 단계별로 영속 저장한다. 같은 단계의 새로고침·재접속·투표·확정은 저장 결과를 사용하고, 참여자 추가 또는 12시간 경계 진입 때만 새 버전을 계산한다.
 - 외부 공급자 장애를 관찰할 수 있는 구조화 로그와 최소 상태 지표를 둔다.
 
 ### 2단계 추천 상태

@@ -11,7 +11,7 @@ export async function getPublicRecommendation(
 ) {
   const meeting = await repository.findByInviteTokenHash(tokens.hashCapability(inviteToken));
   if (!meeting || meeting.participants.length < 2) return null;
-  const result = await buildRecommendationView(meeting, recommendations);
+  const result = await buildRecommendationView(meeting, recommendations, repository);
   if (!result) return null;
   return {
     ...result,

@@ -25,6 +25,7 @@ export type TransitRouteUnavailableReason =
   | "provider_error"
   | "timeout"
   | "network_error"
+  | "quota_exceeded"
   | "quota_guard";
 
 export type TransitRouteResult =

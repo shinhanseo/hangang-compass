@@ -79,6 +79,8 @@ export class FakeRecommendationDataSource implements RecommendationDataSource {
     return { source: "fake" as const, calculatedAt: null };
   }
 
+  routeFailureFor(_participants: Participant[]) { return null; }
+
   arrivalCrowdFor(parkId: string, _meetingAt: string) {
     const [level, label] = FAKE_ARRIVAL_CROWD[parkId as keyof typeof FAKE_ARRIVAL_CROWD]
       ?? ["normal", "보통"] as const;

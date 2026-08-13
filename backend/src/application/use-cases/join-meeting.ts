@@ -35,7 +35,7 @@ export async function joinMeeting(
   participant.resumeTokenHash = tokens.hashCapability(participantResumeToken);
   meeting.participants.push(participant);
   await repository.save(meeting);
-  const result = await buildRecommendationView(meeting, recommendations);
+  const result = await buildRecommendationView(meeting, recommendations, repository);
   return {
     meetingId: meeting.id,
     participantToken,
@@ -44,6 +44,9 @@ export async function joinMeeting(
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const
-      : result ? "ready" as const : "route_unavailable" as const,
+      : result ? "ready" as const
+        : ["quota_exceeded", "quota_guard"].includes(recommendations.routeFailureFor(meeting.participants) ?? "")
+          ? "route_quota_exceeded" as const
+          : "route_unavailable" as const,
   };
 }

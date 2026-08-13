@@ -63,7 +63,7 @@ export interface HostMeetingView {
   participantCount: number;
   participants: Array<{ alias: string; isHost: boolean; travelMode: TravelMode }>;
   result: RecommendationResultView | null;
-  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable" | "route_quota_exceeded";
   confirmedParkId: string | null;
   poll: MeetingPollView | null;
 }

@@ -6,13 +6,24 @@ import {
 } from "../../domain/recommendation/recommendation.js";
 import type { CandidateRole, RecommendationResultView } from "../models/meeting-view.js";
 import type { RecommendationDataSource } from "../ports/recommendation-data-source.js";
+import type { MeetingRepository } from "../ports/meeting-repository.js";
 import { buildMeetingPollView } from "./build-meeting-poll-view.js";
 
 export async function buildRecommendationView(
   meeting: Meeting,
   dataSource: RecommendationDataSource,
+  repository?: MeetingRepository,
 ): Promise<RecommendationResultView | null> {
   if (meeting.participants.length < 2) return null;
+  const revision = `recommendation-v1:${meeting.participants.length}:${dataSource.stageFor(meeting.meetingAt)}`;
+  const calculate = () => calculateRecommendationView(meeting, dataSource);
+  return repository ? repository.recommendationView(meeting.id, revision, calculate) : calculate();
+}
+
+async function calculateRecommendationView(
+  meeting: Meeting,
+  dataSource: RecommendationDataSource,
+): Promise<RecommendationResultView | null> {
   await dataSource.prepareFor(meeting.participants, meeting.meetingAt);
   const stage = dataSource.stageFor(meeting.meetingAt);
   const candidates = dataSource.candidates(meeting.participants, meeting.meetingAt);
@@ -164,8 +175,8 @@ export async function buildRecommendationView(
   };
 }
 
-export async function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource) {
-  const result = await buildRecommendationView(meeting, dataSource);
+export async function toHostMeetingView(meeting: Meeting, dataSource: RecommendationDataSource, repository?: MeetingRepository) {
+  const result = await buildRecommendationView(meeting, dataSource, repository);
   const hostId = meeting.participants.find((participant) => participant.role === "host")?.id;
   return {
     id: meeting.id,
@@ -182,7 +193,10 @@ export async function toHostMeetingView(meeting: Meeting, dataSource: Recommenda
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const
-      : result ? "ready" as const : "route_unavailable" as const,
+      : result ? "ready" as const
+        : ["quota_exceeded", "quota_guard"].includes(dataSource.routeFailureFor(meeting.participants) ?? "")
+          ? "route_quota_exceeded" as const
+          : "route_unavailable" as const,
     confirmedParkId: meeting.confirmedParkId,
     poll: buildMeetingPollView(meeting, hostId),
   };

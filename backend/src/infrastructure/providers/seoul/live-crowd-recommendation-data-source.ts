@@ -26,6 +26,7 @@ export class LiveCrowdRecommendationDataSource implements RecommendationDataSour
   meetingPointFor(parkId: string) { return this.#base.meetingPointFor(parkId); }
   experienceFor(parkId: string) { return this.#base.experienceFor(parkId); }
   travelData(participants: Participant[]) { return this.#base.travelData(participants); }
+  routeFailureFor(participants: Participant[]) { return this.#base.routeFailureFor(participants); }
 
   async prepareFor(participants: Participant[], meetingAt: string): Promise<void> {
     await this.#base.prepareFor(participants, meetingAt);

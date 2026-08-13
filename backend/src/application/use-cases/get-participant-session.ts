@@ -15,13 +15,16 @@ export async function getParticipantSession(
   if (!meeting) return null;
   const submitted = Boolean(authorizedParticipantId(meeting, tokens, participantToken));
   if (!submitted) return { submitted: false as const };
-  const result = await buildRecommendationView(meeting, recommendations);
+  const result = await buildRecommendationView(meeting, recommendations, repository);
   return {
     submitted: true as const,
     participantCount: meeting.participants.length,
     result,
     recommendationStatus: meeting.participants.length < 2
       ? "waiting_for_participants" as const
-      : result ? "ready" as const : "route_unavailable" as const,
+      : result ? "ready" as const
+        : ["quota_exceeded", "quota_guard"].includes(recommendations.routeFailureFor(meeting.participants) ?? "")
+          ? "route_quota_exceeded" as const
+          : "route_unavailable" as const,
   };
 }

@@ -30,5 +30,5 @@ export async function setHostParticipant(
   if (!participant) return null;
   meeting.participants.push(participant);
   await repository.save(meeting);
-  return toHostMeetingView(meeting, recommendations);
+  return toHostMeetingView(meeting, recommendations, repository);
 }

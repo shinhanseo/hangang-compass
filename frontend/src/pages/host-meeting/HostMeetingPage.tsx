@@ -409,8 +409,8 @@ export function HostMeetingPage({ meetingId }: { meetingId: string }) {
           onConfirmWinner={() => void confirmPollWinner()}
         />
         {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
-      </> : undefined} /> : data.meeting.recommendationStatus === "route_unavailable" ? (
-        <section className="waiting-state"><span>!</span><h2>이동 경로를 확인하지 못했어요</h2><p>일부 경로를 계산하지 못했습니다. 잠시 후 위의 새로고침 버튼을 눌러주세요.</p></section>
+      </> : undefined} /> : data.meeting.recommendationStatus === "route_unavailable" || data.meeting.recommendationStatus === "route_quota_exceeded" ? (
+        <section className="waiting-state"><span>!</span><h2>{data.meeting.recommendationStatus === "route_quota_exceeded" ? "오늘 경로 조회가 많았어요" : "이동 경로를 확인하지 못했어요"}</h2><p>{data.meeting.recommendationStatus === "route_quota_exceeded" ? "카카오 경로 조회 한도에 도달해 새 추천 계산이 잠시 멈췄어요. 한도가 초기화되면 이 약속을 다시 열어 계산할 수 있어요." : "일부 경로를 계산하지 못했습니다. 잠시 후 위의 새로고침 버튼을 눌러주세요."}</p></section>
       ) : setupIncomplete ? (
         <section className="waiting-state compact"><div className="progress-track"><i /></div><p>방장님의 이동 장소를 정하면 초대가 시작돼요.</p></section>
       ) : (

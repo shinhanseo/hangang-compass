@@ -146,6 +146,18 @@ export class LiveRouteRecommendationDataSource implements RecommendationDataSour
       calculatedAt: available.sort().at(0) ?? null,
     };
   }
+
+  routeFailureFor(participants: Participant[]) {
+    const relevantIds = new Set(participants.flatMap((participant) => [
+      participant.origin.placeId,
+      ...(participant.destination ? [participant.destination.placeId] : []),
+    ]));
+    const reasons = [...this.#results.entries()].flatMap(([key, result]) =>
+      [...relevantIds].some((id) => key.includes(`:${id}:`)) && result.status === "unavailable" ? [result.reason] : []);
+    if (reasons.includes("quota_exceeded")) return "quota_exceeded" as const;
+    if (reasons.includes("quota_guard")) return "quota_guard" as const;
+    return reasons.length > 0 ? "route_unavailable" as const : null;
+  }
 }
 
 function combineCarRoute(drive: TransitRouteResult, walk: TransitRouteResult): TransitRouteResult {

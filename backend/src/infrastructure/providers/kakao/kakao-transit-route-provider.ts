@@ -149,7 +149,12 @@ export class KakaoTransitRouteProvider implements TransitRouteProvider {
       url.searchParams.set("s_name", origin.name);
       url.searchParams.set("e_name", destination.name);
       const response = await this.#json(url);
-      if (!response.response.ok) return { status: "unavailable", reason: "http_error" };
+      if (!response.response.ok) {
+        const errorCode = response.body && typeof response.body === "object"
+          ? (response.body as Record<string, unknown>).code
+          : null;
+        return { status: "unavailable", reason: errorCode === -10 ? "quota_exceeded" : "http_error" };
+      }
       const route = fastestRoute(response.body, new Date());
       if (route) return route;
       const status = response.body && typeof response.body === "object"

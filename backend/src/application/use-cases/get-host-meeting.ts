@@ -13,5 +13,5 @@ export async function getHostMeeting(
 ) {
   const meeting = await repository.findById(meetingId);
   if (!isAuthorizedHost(meeting, tokens, hostToken)) return null;
-  return toHostMeetingView(meeting, recommendations);
+  return toHostMeetingView(meeting, recommendations, repository);
 }

@@ -453,6 +453,33 @@ test("route outage returns an explicit unavailable state instead of fake minutes
   assert.equal(body.recommendationStatus, "route_unavailable");
 });
 
+test("route quota exhaustion is reported separately from a missing route", async (context) => {
+  const services = createApplicationServices({
+    routeProvider: { routeFor: async () => ({ status: "unavailable", reason: "quota_exceeded" }) },
+  });
+  const server = createApp(services).listen(0, "127.0.0.1");
+  context.after(() => server.close());
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const created = await (await fetch(`${baseUrl}/api/meetings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ meetingAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString(), travelPattern: "individual_round_trip" }),
+  })).json();
+  const inviteToken = created.invitePath.split("/").at(-1);
+  let joined: Response | null = null;
+  for (const [alias, placeId, placeName] of [["민지", "hongdae", "홍대입구역"], ["준호", "gangnam", "강남역"]]) {
+    joined = await fetch(`${baseUrl}/api/invites/${inviteToken}/participants`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ alias, originPlaceId: placeId, originPlaceName: placeName }),
+    });
+  }
+  assert.equal((await joined!.json()).recommendationStatus, "route_quota_exceeded");
+});
+
 test("host submits an individual travel place and counts toward recommendation", async (context) => {
   const server = createApp().listen(0, "127.0.0.1");
   context.after(() => server.close());

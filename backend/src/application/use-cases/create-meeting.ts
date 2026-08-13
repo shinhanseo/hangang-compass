@@ -26,7 +26,7 @@ export async function createMeeting(dependencies: CreateMeetingDependencies, mee
   };
   await dependencies.repository.save(meeting);
   return {
-    meeting: await toHostMeetingView(meeting, dependencies.recommendations),
+    meeting: await toHostMeetingView(meeting, dependencies.recommendations, dependencies.repository),
     inviteToken,
     hostToken,
   };

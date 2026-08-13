@@ -22,7 +22,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   const [result, setResult] = useState<Recommendation | null>(null);
   const [count, setCount] = useState(0);
   const [error, setError] = useState("");
-  const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
+  const [recommendationFailure, setRecommendationFailure] = useState<"route_unavailable" | "route_quota_exceeded" | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [recommendationUpdate, setRecommendationUpdate] = useState("");
   const [publicResult, setPublicResult] = useState<Recommendation | null>(null);
@@ -41,7 +41,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
         setSubmitted(true);
         setCount(restored.session.participantCount);
         setResult(restored.session.result);
-        setRecommendationUnavailable(restored.session.recommendationStatus === "route_unavailable");
+        setRecommendationFailure(restored.session.recommendationStatus === "route_unavailable" || restored.session.recommendationStatus === "route_quota_exceeded" ? restored.session.recommendationStatus : null);
         return;
       }
       if (invite.meeting.participantCount >= 2) {
@@ -101,16 +101,16 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
   }, [inviteToken, Boolean(publicResult), Boolean(result)]);
 
   useEffect(() => {
-    if (!submitted || result || recommendationUnavailable) return;
+    if (!submitted || result || recommendationFailure) return;
     const refreshSession = () => void api<{ session: ParticipantSession }>(`/api/invites/${inviteToken}/participant-session`).then(({ session }) => {
       if (!session.submitted) return;
       setCount(session.participantCount);
       setResult(session.result);
-      setRecommendationUnavailable(session.recommendationStatus === "route_unavailable");
+      setRecommendationFailure(session.recommendationStatus === "route_unavailable" || session.recommendationStatus === "route_quota_exceeded" ? session.recommendationStatus : null);
     }).catch(() => undefined);
     const timer = window.setInterval(refreshSession, 4_000);
     return () => window.clearInterval(timer);
-  }, [inviteToken, submitted, Boolean(result), recommendationUnavailable]);
+  }, [inviteToken, submitted, Boolean(result), recommendationFailure]);
 
   function selectOrigin(place: OriginPlace | null) {
     setOrigin(place);
@@ -126,7 +126,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       const joined = await api<{
         participantCount: number;
         result: Recommendation | null;
-        recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+        recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable" | "route_quota_exceeded";
         resumeToken?: string;
       }>(`/api/invites/${inviteToken}/participants`, {
         method: "POST",
@@ -144,7 +144,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       setSubmitted(true);
       setResult(joined.result);
       setViewingPublicResult(false);
-      setRecommendationUnavailable(joined.recommendationStatus === "route_unavailable");
+      setRecommendationFailure(joined.recommendationStatus === "route_unavailable" || joined.recommendationStatus === "route_quota_exceeded" ? joined.recommendationStatus : null);
       void api<{ poll: MeetingPoll }>(`/api/invites/${inviteToken}/poll`).then((response) => setPoll(response.poll)).catch(() => undefined);
     } catch {
       setError(meeting?.travelPattern === "shared_origin" ? "별칭과 귀가 장소를 다시 확인해 주세요." : "별칭과 출발·귀가 장소를 다시 확인해 주세요.");
@@ -178,7 +178,7 @@ export function JoinMeetingPage({ inviteToken }: { inviteToken: string }) {
       {pollError && <p className="error poll-error" role="alert">{pollError}</p>}
     </> : undefined} />
   </main>;
-  if (recommendationUnavailable) return <main className="shell app-screen"><MobileAppBar /><section className="state-card"><span className="state-icon">!</span><h1>경로를 확인하지 못했어요</h1><p>일부 참여자의 이동 경로가 없어 지금은 추천을 만들 수 없습니다. 잠시 후 방장 화면에서 다시 확인해 주세요.</p></section></main>;
+  if (recommendationFailure) return <main className="shell app-screen"><MobileAppBar /><section className="state-card"><span className="state-icon">!</span><h1>{recommendationFailure === "route_quota_exceeded" ? "오늘 경로 조회가 많았어요" : "경로를 확인하지 못했어요"}</h1><p>{recommendationFailure === "route_quota_exceeded" ? "카카오 경로 조회 한도에 도달해 지금은 새 추천을 계산할 수 없어요. 이미 계산된 추천은 그대로 볼 수 있고, 조회 한도가 초기화되면 다시 계산할게요." : "일부 참여자의 이동 경로가 없어 지금은 추천을 만들 수 없습니다. 잠시 후 방장 화면에서 다시 확인해 주세요."}</p></section></main>;
   if (submitted) return <main className="shell app-screen"><MobileAppBar /><section className="state-card participant-waiting-state"><span className="state-icon">✓</span><p className="state-kicker">장소 입력 완료</p><h1>친구의 응답을<br />기다리고 있어요</h1><p>현재 {count}명이 참여했어요. 추천이 준비되면 이 화면에서 바로 보여드릴게요.</p><div className="waiting-dots" aria-hidden="true"><i /><i /><i /></div></section></main>;
 
   const sharedOrigin = meeting.travelPattern === "shared_origin";

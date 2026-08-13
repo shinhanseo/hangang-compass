@@ -2,9 +2,11 @@ import { Pool, type PoolClient } from "pg";
 
 import type { MeetingRepository } from "../../application/ports/meeting-repository.js";
 import type { Meeting } from "../../domain/meeting/meeting.js";
+import type { RecommendationResultView } from "../../application/models/meeting-view.js";
 import { deletionDueAt } from "../../domain/privacy/privacy-policy.js";
 
 type MeetingRow = { payload: unknown };
+type RecommendationRow = { payload: unknown };
 
 const schemaSql = `
   CREATE TABLE IF NOT EXISTS meetings (
@@ -17,6 +19,13 @@ const schemaSql = `
     meeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS meetings_expires_at_idx ON meetings(expires_at);
+  CREATE TABLE IF NOT EXISTS recommendation_views (
+    meeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+    revision TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (meeting_id, revision)
+  );
 `;
 
 function expiresAt(meeting: Meeting): string {
@@ -99,6 +108,29 @@ export class PostgresMeetingRepository implements MeetingRepository {
     await this.#ready;
     const result = await this.#pool.query("DELETE FROM meetings WHERE id = $1", [id]);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async recommendationView(meetingId: string, revision: string, calculate: () => Promise<RecommendationResultView | null>) {
+    await this.#ready;
+    const lockKey = `${meetingId}:${revision}`;
+    const client = await this.#pool.connect();
+    try {
+      await client.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
+      const cached = await client.query<RecommendationRow>(
+        "SELECT payload FROM recommendation_views WHERE meeting_id = $1 AND revision = $2",
+        [meetingId, revision],
+      );
+      if (cached.rows[0]) return cached.rows[0].payload as RecommendationResultView;
+      const result = await calculate();
+      if (result) await client.query(`
+        INSERT INTO recommendation_views (meeting_id, revision, payload, created_at) VALUES ($1, $2, $3::jsonb, $4)
+        ON CONFLICT(meeting_id, revision) DO UPDATE SET payload = excluded.payload, created_at = excluded.created_at
+      `, [meetingId, revision, JSON.stringify(result), new Date().toISOString()]);
+      return result;
+    } finally {
+      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]).catch(() => undefined);
+      client.release();
+    }
   }
 
   async deleteExpired(now = new Date()): Promise<number> {

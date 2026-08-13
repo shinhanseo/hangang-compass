@@ -4,9 +4,11 @@ import { DatabaseSync } from "node:sqlite";
 
 import type { MeetingRepository } from "../../application/ports/meeting-repository.js";
 import type { Meeting } from "../../domain/meeting/meeting.js";
+import type { RecommendationResultView } from "../../application/models/meeting-view.js";
 import { deletionDueAt } from "../../domain/privacy/privacy-policy.js";
 
 type MeetingRow = { payload: string };
+type RecommendationRow = { payload: string };
 
 function expiresAt(meeting: Meeting): string {
   return deletionDueAt(meeting.confirmedParkId
@@ -32,6 +34,7 @@ function parseMeeting(payload: string): Meeting | undefined {
 
 export class SqliteMeetingRepository implements MeetingRepository {
   readonly #database: DatabaseSync;
+  readonly #recommendationRequests = new Map<string, Promise<RecommendationResultView | null>>();
 
   constructor(path: string) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -49,6 +52,13 @@ export class SqliteMeetingRepository implements MeetingRepository {
         meeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE
       );
       CREATE INDEX IF NOT EXISTS meetings_expires_at_idx ON meetings(expires_at);
+      CREATE TABLE IF NOT EXISTS recommendation_views (
+        meeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+        revision TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (meeting_id, revision)
+      );
     `);
     this.deleteExpired();
   }
@@ -91,6 +101,23 @@ export class SqliteMeetingRepository implements MeetingRepository {
 
   async deleteById(id: string): Promise<boolean> {
     return Number(this.#database.prepare("DELETE FROM meetings WHERE id = ?").run(id).changes) > 0;
+  }
+
+  async recommendationView(meetingId: string, revision: string, calculate: () => Promise<RecommendationResultView | null>) {
+    const key = `${meetingId}:${revision}`;
+    const row = this.#database.prepare("SELECT payload FROM recommendation_views WHERE meeting_id = ? AND revision = ?").get(meetingId, revision) as RecommendationRow | undefined;
+    if (row) return JSON.parse(row.payload) as RecommendationResultView;
+    const inFlight = this.#recommendationRequests.get(key);
+    if (inFlight) return inFlight;
+    const request = calculate().then((result) => {
+      if (result) this.#database.prepare(`
+        INSERT INTO recommendation_views (meeting_id, revision, payload, created_at) VALUES (?, ?, ?, ?)
+        ON CONFLICT(meeting_id, revision) DO UPDATE SET payload = excluded.payload, created_at = excluded.created_at
+      `).run(meetingId, revision, JSON.stringify(result), new Date().toISOString());
+      return result;
+    }).finally(() => this.#recommendationRequests.delete(key));
+    this.#recommendationRequests.set(key, request);
+    return request;
   }
 
   deleteExpired(now = new Date()): number {

@@ -84,10 +84,11 @@ export interface HostMeeting {
   participantCount: number;
   participants: Array<{ alias: string; isHost: boolean; travelMode: TravelMode }>;
   result: RecommendationResult | null;
-  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+  recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable" | "route_quota_exceeded";
   confirmedParkId: string | null;
   poll: MeetingPoll | null;
 }
+
 export type TravelMode = "public_transit" | "car";
 
 export type ParticipantSession =
@@ -96,5 +97,5 @@ export type ParticipantSession =
       submitted: true;
       participantCount: number;
       result: RecommendationResult | null;
-      recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable";
+      recommendationStatus: "waiting_for_participants" | "ready" | "route_unavailable" | "route_quota_exceeded";
     };

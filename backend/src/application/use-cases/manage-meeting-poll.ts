@@ -12,7 +12,7 @@ export async function startMeetingPoll(repository: MeetingRepository, tokens: Ca
   const meeting = await repository.findById(meetingId);
   if (!isAuthorizedHost(meeting, tokens, hostToken) || meeting.confirmedParkId) return null;
   if (!meeting.poll) {
-    const result = await buildRecommendationView(meeting, recommendations);
+    const result = await buildRecommendationView(meeting, recommendations, repository);
     if (!result) return null;
     meeting.poll = {
       round: 1,
